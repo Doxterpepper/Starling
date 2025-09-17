@@ -1,7 +1,7 @@
 
 #pragma once
 
-namespace musicman
+namespace starling
 {
     //
     // Plan is to give SoundPlayer a buffer like this. Another thread will continually fill this with data, SoundPlayer

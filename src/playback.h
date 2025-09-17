@@ -6,7 +6,7 @@
 #include <pulse/simple.h>
 #include <pulse/error.h>
 
-namespace musicman
+namespace starling
 {
     //
     // Starting off with the linux implementation. There will need to be a different API called for windows and mac(?).

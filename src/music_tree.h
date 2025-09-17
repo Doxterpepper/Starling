@@ -4,7 +4,7 @@
 #include <list>
 #include <string>
 
-namespace musicman
+namespace starling
 {
     class MusicTree;
     class MusicEntry

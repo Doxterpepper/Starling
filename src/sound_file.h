@@ -1,7 +1,7 @@
 
 #pragma once
 
-namespace musicman
+namespace starling
 {
     class SoundFile
     {

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(musicman)
+project(starling)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC_ON)
