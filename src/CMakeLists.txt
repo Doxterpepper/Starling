@@ -13,6 +13,9 @@ set(CMAKE_CXX_FLAGS_RELEASE_INIT "-Wall")
 
 find_package(Qt5 COMPONENTS Core Gui Widgets Svg REQUIRED)
 
+
+find_package(ALSA)
+
 add_executable(${PROJECT_NAME}
     main.cpp
 )
@@ -20,4 +23,7 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
     Qt5::Core Qt5::Gui Qt5::Widgets
     Qt5::Svg
+    ALSA::ALSA
+    pulse
+    pulse-simple
 )
