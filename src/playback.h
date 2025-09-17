@@ -1,10 +1,14 @@
 
 #pragma once
 
+#include <string>
+#include <memory>
 #include <list>
 
 #include <pulse/simple.h>
 #include <pulse/error.h>
+
+#include "playback_buffer.h"
 
 namespace starling
 {
@@ -33,10 +37,14 @@ namespace starling
         SoundPlayer& operator=(const SoundPlayer&) = delete;
         SoundPlayer& operator=(SoundPlayer&&);
 
+        void set_buffer(PlaybackBuffer< uint8_t >* buffer);
+
+        void play_buffer();
+
     private:
         pa_simple* pulse_simple = nullptr;
         pa_sample_spec pulse_settings{};
 
-        PlaybackBuffer< uint8_t > playback_buffer;
+        PlaybackBuffer< uint8_t >* sound_buffer;
     };
 }

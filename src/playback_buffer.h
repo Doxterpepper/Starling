@@ -1,6 +1,9 @@
 
 #pragma once
 
+#include <list>
+#include <vector>
+
 namespace starling
 {
     //
@@ -26,7 +29,12 @@ namespace starling
 
         const std::vector< buffer_type >& peek_front()
         {
-            return buffer_queue.peek_front();
+            return buffer_queue.front();
+        }
+
+        bool has_data() const
+        {
+            return buffer_queue.size() > 0;
         }
     private:
         std::list< std::vector< buffer_type > > buffer_queue;
