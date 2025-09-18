@@ -140,6 +140,8 @@ int main(int argc, char** argv)
     for (size_t song_index = 1; song_index < argc; song_index++)
     {
         auto start_header_load = std::chrono::high_resolution_clock::now();
+        
+        /*
         FILE* song_file_stream = nullptr;
         song_file_stream = fopen(arguments[song_index].c_str(), "rb");
 
@@ -154,8 +156,12 @@ int main(int argc, char** argv)
         size_t read = fread(&wav_header, sizeof(unsigned char), sizeof(wav_header), song_file_stream);
         //std::cout << wav_header << std::endl;
         fseek(song_file_stream, wav_header.data_size(), SEEK_CUR);
-        auto stop_header_load = std::chrono::high_resolution_clock::now();
 
+        */
+        std::unique_ptr<starling::WavFile2> sound_file = starling::open_sound_file(std::filesystem::path(arguments[song_index]));
+        std::cout << sound_file.get() << std::endl;
+
+        auto stop_header_load = std::chrono::high_resolution_clock::now();
         {
             // Not totally necessary, but I don't want to keep this memory around. Just scope it to the cout line and
             // so it's released quickly.
@@ -163,7 +169,7 @@ int main(int argc, char** argv)
             std::cout << "Loaded header in " << header_load_duration.count() << " microseconds." << std::endl;
         }
 
-        auto playback = starling::SoundPlayer(arguments[0], "music", wav_header.channels(), wav_header.frequency());
+        auto playback = starling::SoundPlayer(arguments[0], "music", sound_file->channels(), sound_file->frequency());
         size_t read_bytes = 0;
         std::vector< uint8_t > sound_buffer(BUFSIZE);
         end_turnaround_time = std::chrono::high_resolution_clock::now();
@@ -180,15 +186,15 @@ int main(int argc, char** argv)
 
         do
         {
-            read_bytes = fread(sound_buffer.data(), sizeof(uint8_t), sound_buffer.size(), song_file_stream);
-
+            //read_bytes = fread(sound_buffer.data(), sizeof(uint8_t), sound_buffer.size(), song_file_stream);
+            read_bytes = sound_file->read_sound_chunk(sound_buffer.data(), sound_buffer.size());
             if (read_bytes)
             {
                 playback.play_buffer(sound_buffer, read_bytes);
             }
         } while(read_bytes);
 
-        fclose(song_file_stream);
+        //fclose(song_file_stream);
 
         playback.flush();
         start_turnaround_time = std::chrono::high_resolution_clock::now();
