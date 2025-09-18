@@ -29,47 +29,89 @@
 class wav
 {
 public:
-    size_t audio_format() const
+    std::string file_Type_bloc_id() const
     {
-        size_t format_value = static_cast<size_t>(data_format[10]) | static_cast<size_t>(data_format[11] << 8);
-        return format_value;
+        return std::string(reinterpret_cast<const char*>(master_riff_chunk), 4);
     }
 
     size_t file_size() const
     {
-        return (static_cast<size_t>(master_riff_chunk[4])
-            | static_cast<size_t>(master_riff_chunk[5] << 8)
-            | static_cast<size_t>(master_riff_chunk[6] << 16)
-            | static_cast<size_t>(master_riff_chunk[7] << 24))
-            + 8;
-    }
-
-    std::string fileTypeBlocId() const
-    {
-        char blockId[4] = { (char)master_riff_chunk[0x00], (char)master_riff_chunk[0x01], (char)master_riff_chunk[0x02], (char)master_riff_chunk[0x03] };
-
-        return std::string(blockId);
+        return *reinterpret_cast<const uint32_t*>(master_riff_chunk + 0x04);
     }
 
     std::string file_format_id() const
     {
-        char formatId[4] = { (char)master_riff_chunk[0x08], (char)master_riff_chunk[0x09], (char)master_riff_chunk[0x0a], (char)master_riff_chunk[0x0c] };
-        return std::string(formatId);
+        return std::string(reinterpret_cast<const char*>(master_riff_chunk) + 0x08, 4);
+    }
+
+    std::string format_block_id() const
+    {
+        return std::string(reinterpret_cast<const char*>(data_format), 4);
+    }
+
+    size_t bloc_size() const
+    {
+        return *reinterpret_cast<const uint32_t*>(data_format + 0x04);
+    }
+
+    size_t audio_format() const
+    {
+        return *reinterpret_cast<const uint16_t*>(data_format + 0x08);
+    }
+
+    size_t byte_per_sec() const
+    {
+        return *reinterpret_cast<const uint32_t*>(data_format + 0x10);
     }
 
     size_t bytes_per_block() const
     {
-        return static_cast<size_t>(data_format[0x12]) | (static_cast<size_t>(data_format[0x13]) << 8);
+        return *reinterpret_cast<const uint16_t*>(data_format + 0x14);
     }
 
-    size_t bitsPerSample() const
+    size_t bits_per_sample() const
     {
-        return static_cast<size_t>(data_format[0x14]) | (static_cast<size_t>(data_format[0x15]) << 8);
+        return *reinterpret_cast<const uint16_t*>(data_format + 0x16);
     }
 
     size_t channels() const
     {
-        return static_cast<size_t>(data_format[0x08]) | (static_cast<size_t>(data_format[0x09]) << 8);
+        return *reinterpret_cast<const uint16_t*>(data_format + 0x0a);
+    }
+
+    size_t frequency() const
+    {
+        return *reinterpret_cast<const uint32_t*>(data_format + 0x0c);
+    }
+
+    std::string data_bloc_id() const
+    {
+        return std::string(reinterpret_cast<const char*>(sampled_data), 4);
+    }
+
+    size_t data_size() const
+    {
+        return *reinterpret_cast<const uint32_t*>(sampled_data + 0x04);
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const wav& wave_header)
+    {
+        os << "File Type Block ID : " << wave_header.file_Type_bloc_id() << std::endl;
+        os << "File Size : " << wave_header.file_size() << std::endl;
+        os << "File Format ID : " << wave_header.file_format_id() << std::endl;
+        os << std::endl;
+        os << "Fomat Bloc ID : " << wave_header.format_block_id() << std::endl;
+        os << "Block Size : " << wave_header.bloc_size() << std::endl;
+        os << "Audio Format : " << wave_header.audio_format() << std::endl;
+        os << "Channels : " << wave_header.channels() << std::endl;
+        os << "Frequency : " << wave_header.frequency() << std::endl;
+        os << "Bytes Per Second : " << wave_header.byte_per_sec() << std::endl;
+        os << "Bytes Per Block : " << wave_header.bytes_per_block() << std::endl;
+        os << "Bits Per Sample : " << wave_header.bits_per_sample() << std::endl;
+        os << std::endl;
+        os << "Data Bloc ID : " << wave_header.data_bloc_id() << std::endl;
+        os << "Sampled Data : " << wave_header.data_size() << std::endl;
+        return os;
     }
 private:
     // Master riff chunk.
@@ -83,12 +125,12 @@ private:
 
     // 0x00 : FormatBlocID    (4 bytes) : Identifier « fmt␣ »  (0x66, 0x6D, 0x74, 0x20)
     // 0x04 : BlocSize        (4 bytes) : Chunk size minus 8 bytes, which is 16 bytes here  (0x10)
-    // 0x06 : AudioFormat     (2 bytes) : Audio format (1: PCM integer, 3: IEEE 754 float)
-    // 0x08 : NbrChannels     (2 bytes) : Number of channels
-    // 0x0a : Frequency       (4 bytes) : Sample rate (in hertz)
-    // 0x0e : BytePerSec      (4 bytes) : Number of bytes to read per second (Frequency * BytePerBloc).
-    // 0x12 : BytePerBloc     (2 bytes) : Number of bytes per block (NbrChannels * BitsPerSample / 8).
-    // 0x14 : BitsPerSample   (2 bytes) : Number of bits per sample
+    // 0x08 : AudioFormat     (2 bytes) : Audio format (1: PCM integer, 3: IEEE 754 float)
+    // 0x0a : NbrChannels     (2 bytes) : Number of channels
+    // 0x0c : Frequency       (4 bytes) : Sample rate (in hertz)
+    // 0x10 : BytePerSec      (4 bytes) : Number of bytes to read per second (Frequency * BytePerBloc).
+    // 0x14 : BytePerBloc     (2 bytes) : Number of bytes per block (NbrChannels * BitsPerSample / 8).
+    // 0x16 : BitsPerSample   (2 bytes) : Number of bits per sample
     unsigned char data_format[24];
     
     // Chunk containing sampled data.
@@ -206,7 +248,6 @@ int main(int argc, char** argv)
         arguments[arg_index] = std::string(argv[arg_index]);
     }
 
-    auto playback = starling::SoundPlayer(arguments[0], "music", 2, 44100);
 
     auto start_turnaround_time = std::chrono::high_resolution_clock::now();
     auto end_turnaround_time = std::chrono::high_resolution_clock::now();
@@ -225,14 +266,8 @@ int main(int argc, char** argv)
         std::cout << "Playing file - " << arguments[1] << std::endl;
         wav wav_header;
         size_t read = fread(&wav_header, sizeof(unsigned char), sizeof(wav_header), song_file_stream);
-        //std::cout << "Read header of size - " << read << std::endl;
-        //std::cout << "Audio format - " << wav_header.audio_format() << std::endl;
-        //std::cout << "File size - " << wav_header.file_size() << std::endl;
-        //std::cout << "Channels - " << wav_header.channels() << std::endl;
-        //std::cout << "BLoc ID - " << wav_header.fileTypeBlocId() << std::endl;
-        //std::cout << "FileFormatID - " << wav_header.file_format_id() << std::endl;
-        //std::cout << "Bytes per block - " << wav_header.bytes_per_block() << std::endl;
-        //std::cout << "Bits Per SAmple - " << wav_header.bitsPerSample() << std::endl;
+        std::cout << wav_header << std::endl;
+        fseek(song_file_stream, wav_header.data_size(), SEEK_CUR);
         auto stop_header_load = std::chrono::high_resolution_clock::now();
 
         {
@@ -242,6 +277,7 @@ int main(int argc, char** argv)
             std::cout << "Loaded header in " << header_load_duration.count() << " microseconds." << std::endl;
         }
 
+        auto playback = starling::SoundPlayer(arguments[0], "music", wav_header.channels(), wav_header.frequency());
         size_t read_bytes = 0;
         std::vector< uint8_t > sound_buffer(BUFSIZE);
         end_turnaround_time = std::chrono::high_resolution_clock::now();
