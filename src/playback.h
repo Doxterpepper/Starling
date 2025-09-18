@@ -41,6 +41,10 @@ namespace starling
 
         void play_buffer();
 
+        void play_buffer(const std::vector< uint8_t >& data, size_t length);
+
+        void flush();
+
     private:
         pa_simple* pulse_simple = nullptr;
         pa_sample_spec pulse_settings{};

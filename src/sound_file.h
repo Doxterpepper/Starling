@@ -3,12 +3,6 @@
 
 namespace starling
 {
-    class SoundFile
-    {
-    public:
-        static SoundFile read_file(const std::string& path);
-    };
-
     class WavFile
     {
 public:

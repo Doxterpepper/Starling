@@ -34,6 +34,7 @@ namespace starling
     {
         if (pulse_simple)
         {
+            flush();
             pa_simple_free(pulse_simple);
         }
     }
@@ -51,6 +52,27 @@ namespace starling
         other.pulse_simple = nullptr;
         pulse_settings = other.pulse_settings;
         return *this;
+    }
+
+    void SoundPlayer::play_buffer(const std::vector< uint8_t >& buffer, size_t length)
+    {
+        int error = 0;
+        int result = pa_simple_write(pulse_simple, buffer.data(), buffer.size(), &error);
+
+        if (result < 0)
+        {
+            std::cerr << "pa_simple_write_failed " << pa_strerror(error) << std::endl;
+        }
+    }
+
+    void SoundPlayer::flush()
+    {
+        int error = 0;
+        int result = pa_simple_flush(pulse_simple, &error);
+        if (result < 0)
+        {
+            std::cerr << "Could not flush buffer. " << pa_strerror(error) << std::endl;
+        }
     }
 
     void SoundPlayer::set_buffer(PlaybackBuffer< uint8_t >* buffer)

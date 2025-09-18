@@ -5,6 +5,8 @@
 #include <list>
 #include <fstream>
 
+#include <chrono>
+
 #include <alsa/asoundlib.h>
 
 
@@ -21,6 +23,8 @@
 #include <QWidget>
 #include <QApplication>
 #include <QHBoxLayout>
+
+#include "playback.h"
 
 class wav
 {
@@ -202,86 +206,66 @@ int main(int argc, char** argv)
         arguments[arg_index] = std::string(argv[arg_index]);
     }
 
-    //std::ifstream song_file_stream(arguments[1], std::ifstream::binary);
+    auto playback = starling::SoundPlayer(arguments[0], "music", 2, 44100);
 
-    FILE* song_file_stream = nullptr;
-    song_file_stream = fopen(arguments[1].c_str(), "rb");
-
-    if (!song_file_stream)
+    auto start_turnaround_time = std::chrono::high_resolution_clock::now();
+    auto end_turnaround_time = std::chrono::high_resolution_clock::now();
+    for (size_t song_index = 1; song_index < argc; song_index++)
     {
-        std::cerr << "Could not open file - " << arguments[1] << std::endl;
-        return -1;
-    }
+        auto start_header_load = std::chrono::high_resolution_clock::now();
+        FILE* song_file_stream = nullptr;
+        song_file_stream = fopen(arguments[song_index].c_str(), "rb");
 
-    //song_file_stream.seekg(0, song_file_stream.end);
-    //size_t length = song_file_stream.tellg();
-    //song_file_stream.seekg(0, song_file_stream.beg);
-
-    std::cout << "Playing file - " << arguments[1] << std::endl;
-    wav wav_header;
-    //size_t read = song_file_stream.readsome((char*)&wav_header, sizeof(wav_header));
-    size_t read = fread(&wav_header, sizeof(void*), sizeof(wav_header), song_file_stream);
-    std::cout << "Read header of size - " << read << std::endl;
-    std::cout << "Audio format - " << wav_header.audio_format() << std::endl;
-    std::cout << "File size - " << wav_header.file_size() << std::endl;
-    std::cout << "Channels - " << wav_header.channels() << std::endl;
-    std::cout << "BLoc ID - " << wav_header.fileTypeBlocId() << std::endl;
-    std::cout << "FileFormatID - " << wav_header.file_format_id() << std::endl;
-    std::cout << "Bytes per block - " << wav_header.bytes_per_block() << std::endl;
-    std::cout << "Bits Per SAmple - " << wav_header.bitsPerSample() << std::endl;
-
-    pa_simple *s;
-    pa_sample_spec ss;
-    
-    ss.format = PA_SAMPLE_S16NE;
-    ss.channels = 2;
-    ss.rate = 44100;
-    
-    int error;
-    s = pa_simple_new(NULL,               // Use the default server.
-                    arguments[0].c_str(),           // Our application's name.
-                    PA_STREAM_PLAYBACK,
-                    NULL,               // Use the default device.
-                    "music",            // Description of our stream.
-                    &ss,                // Our sample format.
-                    NULL,               // Use default channel map
-                    NULL,               // Use default buffering attributes.
-                    &error               // Ignore error code.
-                    );
-    if (!s)
-    {
-        std::cerr << "pa_simple_new failed - " << pa_strerror(error) << std::endl;
-        return error;
-    }
-
-    size_t r;
-    do
-    {
-        uint8_t sound_buffer[BUFSIZE];
-
-        if (false)
+        if (!song_file_stream)
         {
-            pa_usec_t latency;
-            if ((latency = pa_simple_get_latency(s, &error)) == (pa_usec_t) -1)
-            {
-                std::cerr << __FILE__ << ": pa_simple_get_latency failed - " << pa_strerror(error) << std::endl;
-                return error;
-            }
-
-            std::cout << (float)latency << " usec           \r";
+            std::cerr << "Could not open file - " << arguments[1] << std::endl;
+            return -1;
         }
 
-        //r = song_file_stream.readsome(reinterpret_cast<char*>(sound_buffer), BUFSIZE);
-        r = fread(sound_buffer, sizeof(uint8_t), BUFSIZE, song_file_stream);
-        std::cout << "read " << r << " bytes" << std::endl;
-        if (r)
+        std::cout << "Playing file - " << arguments[1] << std::endl;
+        wav wav_header;
+        size_t read = fread(&wav_header, sizeof(unsigned char), sizeof(wav_header), song_file_stream);
+        //std::cout << "Read header of size - " << read << std::endl;
+        //std::cout << "Audio format - " << wav_header.audio_format() << std::endl;
+        //std::cout << "File size - " << wav_header.file_size() << std::endl;
+        //std::cout << "Channels - " << wav_header.channels() << std::endl;
+        //std::cout << "BLoc ID - " << wav_header.fileTypeBlocId() << std::endl;
+        //std::cout << "FileFormatID - " << wav_header.file_format_id() << std::endl;
+        //std::cout << "Bytes per block - " << wav_header.bytes_per_block() << std::endl;
+        //std::cout << "Bits Per SAmple - " << wav_header.bitsPerSample() << std::endl;
+        auto stop_header_load = std::chrono::high_resolution_clock::now();
+
         {
-            int result = pa_simple_write(s, sound_buffer, r, &error);
-            if (result < 0)
-            {
-                std::cerr << "pa_simple_write failed " << pa_strerror(error) << std::endl;
-                return error;
-            }
+            // Not totally necessary, but I don't want to keep this memory around. Just scope it to the cout line and
+            // so it's released quickly.
+            auto header_load_duration = duration_cast<std::chrono::microseconds>(stop_header_load - start_header_load);
+            std::cout << "Loaded header in " << header_load_duration.count() << " microseconds." << std::endl;
         }
-    } while(r);
+
+        size_t read_bytes = 0;
+        std::vector< uint8_t > sound_buffer(BUFSIZE);
+        end_turnaround_time = std::chrono::high_resolution_clock::now();
+
+        {
+            // Not totally necessary, but I don't want to keep this memory around. Just scope it to the cout line and
+            // so it's released quickly.
+            auto turnaround_time_duration = duration_cast<std::chrono::microseconds>(end_turnaround_time - start_turnaround_time);
+            std::cout << "turnaround in " << turnaround_time_duration.count() << " microseconds." << std::endl;
+        }
+
+        do
+        {
+            read_bytes = fread(sound_buffer.data(), sizeof(uint8_t), sound_buffer.size(), song_file_stream);
+
+            if (read_bytes)
+            {
+                playback.play_buffer(sound_buffer, read_bytes);
+            }
+        } while(read_bytes);
+
+        fclose(song_file_stream);
+
+        playback.flush();
+        start_turnaround_time = std::chrono::high_resolution_clock::now();
+    }
 }
