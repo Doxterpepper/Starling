@@ -21,7 +21,7 @@ find_package(ALSA)
 
 add_executable(${PROJECT_NAME}
     main.cpp
-    playback.cpp
+    sound/playback.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}

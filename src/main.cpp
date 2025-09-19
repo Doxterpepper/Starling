@@ -24,8 +24,8 @@
 #include <QApplication>
 #include <QHBoxLayout>
 
-#include "playback.h"
-#include "sound_file.h"
+#include "sound/playback.h"
+#include "sound/sound_file.h"
 
 bool isMusicFile(const std::filesystem::path& file)
 {

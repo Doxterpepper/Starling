@@ -4,11 +4,11 @@
 #include <string>
 #include <memory>
 #include <list>
+#include <vector>
+#include <iostream>
 
 #include <pulse/simple.h>
 #include <pulse/error.h>
-
-#include "playback_buffer.h"
 
 namespace starling
 {
@@ -37,18 +37,22 @@ namespace starling
         SoundPlayer& operator=(const SoundPlayer&) = delete;
         SoundPlayer& operator=(SoundPlayer&&);
 
-        void set_buffer(PlaybackBuffer< uint8_t >* buffer);
+        template <typename buffer_type>
+        void play_buffer(const std::vector< buffer_type >& data, size_t length)
+        {
+            int error = 0;
+            int result = pa_simple_write(pulse_simple, data.data(), data.size(), &error);
 
-        void play_buffer();
-
-        void play_buffer(const std::vector< uint8_t >& data, size_t length);
+            if (result < 0)
+            {
+                std::cerr << "pa_simple_write_failed " << pa_strerror(error) << std::endl;
+            }
+        }
 
         void flush();
 
     private:
         pa_simple* pulse_simple = nullptr;
         pa_sample_spec pulse_settings{};
-
-        PlaybackBuffer< uint8_t >* sound_buffer;
     };
 }

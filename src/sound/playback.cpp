@@ -54,17 +54,6 @@ namespace starling
         return *this;
     }
 
-    void SoundPlayer::play_buffer(const std::vector< uint8_t >& buffer, size_t length)
-    {
-        int error = 0;
-        int result = pa_simple_write(pulse_simple, buffer.data(), buffer.size(), &error);
-
-        if (result < 0)
-        {
-            std::cerr << "pa_simple_write_failed " << pa_strerror(error) << std::endl;
-        }
-    }
-
     void SoundPlayer::flush()
     {
         int error = 0;
@@ -72,27 +61,6 @@ namespace starling
         if (result < 0)
         {
             std::cerr << "Could not flush buffer. " << pa_strerror(error) << std::endl;
-        }
-    }
-
-    void SoundPlayer::set_buffer(PlaybackBuffer< uint8_t >* buffer)
-    {
-        sound_buffer = buffer;
-    }
-
-    void SoundPlayer::play_buffer()
-    {
-        while (sound_buffer->has_data())
-        {
-            const std::vector< uint8_t >& playback_data = sound_buffer->peek_front();
-            int error = 0;
-            int result = pa_simple_write(pulse_simple, playback_data.data(), playback_data.size(), &error);
-            sound_buffer->pop_front();
-
-            if (result < 0)
-            {
-                std::cerr << "pa_simple_write failed " << pa_strerror(error) << std::endl;
-            }
         }
     }
 }
