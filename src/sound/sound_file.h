@@ -147,7 +147,7 @@ namespace starling
             if (!sound_file)
             {
                 sound_file = fopen(file_path.c_str(), "rb");
-                fseek(sound_file, sizeof(header) + data_size(), SEEK_SET);
+                seek_data();
             }
 
             int read_bytes = fread(buffer, sizeof(uint8_t), buffer_size, sound_file);
@@ -224,6 +224,63 @@ namespace starling
                 fclose(sound_file);
                 sound_file = nullptr;
             }
+        }
+
+        void seek_data()
+        {
+            if (data_bloc_id() == "LIST")
+            {
+                fseek(sound_file, sizeof(header) + data_size(), SEEK_SET);
+            }
+
+            std::vector<char> search_buffer(0xFF); // Arbitrary length of data to search.
+
+            std::string search_tag = "data";
+            size_t tag_index = 0;
+            size_t read_bytes = 0;
+            do
+            {
+                //
+                // Read chunks of data and see if they contain the "data" key word. Search can span multiple buffers.
+                //
+                read_bytes = fread(search_buffer.data(), sizeof(search_buffer[0]), search_buffer.size(), sound_file);
+                std::cout << "Read " << read_bytes << " while searching" << std::endl;
+
+                for (size_t buffer_element = 0; buffer_element < read_bytes; buffer_element++)
+                {
+                    // Go through the buffer read and look for each element of search_tag. This should ammount to the
+                    // key word "data". If we find the 'd' character, increment the tag_index to then search for 'a'.
+                    // do this until we've exhausted the letters in search_tag.
+                    // Once we've found the search tag, seek to the position right after the tag. This is where the
+                    // sound data begins.
+                    if (search_buffer[buffer_element] == search_tag[tag_index])
+                    {
+                        std::cout << search_buffer[buffer_element] << std::endl;
+                        ++tag_index;
+                        if (tag_index >= search_tag.length())
+                        {
+                            //
+                            // Seek to the beginning of the sound data. we've found the data tag and the current
+                            // buffer_element represents the final 'a' in the tag.
+                            // The current file position is at the end of the last read buffer. So we need to move it
+                            // back to the start of the data.
+                            long seek_difference = read_bytes - buffer_element - 1;
+                            std::cout << "Found data tag. going back " << seek_difference << " bytes" << std::endl;;
+                            fseek(sound_file, -seek_difference, SEEK_CUR); // Go back this distance.
+                            fseek(sound_file, 0, SEEK_CUR);
+                            size_t pos = ftell(sound_file);
+                            std::cout << "Currently at position - " << pos << std::endl;
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        tag_index = 0;
+                    }
+                }
+            }while(read_bytes);
+
+            std::cerr << "Could not find data tag."<< std::endl;
         }
     private:
         // Master riff chunk.
