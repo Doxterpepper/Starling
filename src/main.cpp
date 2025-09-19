@@ -158,8 +158,9 @@ int main(int argc, char** argv)
         fseek(song_file_stream, wav_header.data_size(), SEEK_CUR);
 
         */
-        std::unique_ptr<starling::WavFile2> sound_file = starling::open_sound_file(std::filesystem::path(arguments[song_index]));
-        std::cout << sound_file.get() << std::endl;
+        auto sound_file = std::make_unique<starling::SndFile>(arguments[song_index]);
+        //std::unique_ptr<starling::SndFile> sound_file = starling::open_sound_file(std::filesystem::path(arguments[song_index]));
+        //std::cout << sound_file.get() << std::endl;
 
         auto stop_header_load = std::chrono::high_resolution_clock::now();
         {
@@ -188,6 +189,7 @@ int main(int argc, char** argv)
         {
             //read_bytes = fread(sound_buffer.data(), sizeof(uint8_t), sound_buffer.size(), song_file_stream);
             read_bytes = sound_file->read_sound_chunk(sound_buffer.data(), sound_buffer.size());
+            std::cout << "Read " << read_bytes << " bytes";
             if (read_bytes)
             {
                 playback.play_buffer(sound_buffer, read_bytes);

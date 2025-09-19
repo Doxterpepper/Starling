@@ -27,4 +27,5 @@ target_link_libraries(${PROJECT_NAME}
     ALSA::ALSA
     pulse
     pulse-simple
+    sndfile
 )

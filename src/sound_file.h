@@ -6,6 +6,8 @@
 #include <cstdio>
 #include <filesystem>
 
+#include <sndfile.h>
+
 namespace starling
 {
     class SoundFile
@@ -29,7 +31,7 @@ namespace starling
             file_path = other.file_path;
         }
 
-        ~SoundFile()
+        virtual ~SoundFile()
         {
             if (sound_file)
             {
@@ -66,6 +68,89 @@ namespace starling
     protected:
         FILE* sound_file = nullptr;
         std::filesystem::path file_path;
+    };
+
+
+    class SndFile : public SoundFile
+    {
+    public:
+        SndFile(const std::filesystem::path& file_path) :
+            SoundFile(file_path)
+        {
+            //
+            // I'm thinking about what happens if the file is opened too long. For every SndFile object,
+            // a file is opened and remains open the lifetime of the object. This may not be a big deal,
+            // but windows likes to complain about this since it will maintain a lock so long as the app
+            // has it opened.
+            //
+            file_info.format = 0;
+            sound_file = sf_open(file_path.c_str(), SFM_READ, &file_info);
+            std::cout << sound_file << std::endl;
+            std::cout << file_info.format << std::endl;
+            std::cout << file_info.samplerate << std::endl;
+            std::cout << file_info.channels << std::endl;
+        }
+
+        /**
+         * @brief No copying of SndFiles. Since the file is closed with the destructor, if one copy goes out of
+         * scope it will close the file for everyone.
+         * 
+         * @return SndFile& 
+         */
+        SndFile(const SndFile&) = delete;
+
+        SndFile(SndFile&& other) :
+            SoundFile(other)
+        {
+            sound_file = other.sound_file;
+            other.sound_file = nullptr;
+            file_info = other.file_info;
+        }
+
+        ~SndFile() override
+        {
+            if (sound_file)
+            {
+                sf_close(sound_file);
+            }
+        }
+
+        /**
+         * @brief No copying of SndFiles. Since the file is closed with the destructor, if one copy goes out of
+         * scope it will close the file for everyone.
+         * 
+         * @return SndFile& 
+         */
+        SndFile& operator=(const SndFile&) = delete;
+
+        SndFile& operator=(SndFile&& other)
+        {
+            sound_file = other.sound_file;
+            other.sound_file = nullptr;
+            file_info = other.file_info;
+
+            return *this;
+        }
+
+        size_t read_sound_chunk(uint8_t* data, size_t bytes) override
+        {
+            return sf_read_raw(sound_file, data, bytes);
+        }
+
+        size_t channels() const override
+        {
+            return file_info.channels;
+        }
+
+        size_t frequency() const override
+        {
+            return file_info.samplerate;
+        }
+        
+    private:
+        SNDFILE* sound_file = nullptr;
+        SF_INFO file_info;
+
     };
 
     class WavFile2 : public SoundFile
@@ -114,12 +199,12 @@ namespace starling
 
         size_t bytes_per_block() const
         {
-            return *reinterpret_cast<const uint16_t*>(header + 0x1e);
+            return *reinterpret_cast<const uint16_t*>(header + 0x20);
         }
 
         size_t bits_per_sample() const
         {
-            return *reinterpret_cast<const uint16_t*>(header + 0x20);
+            return *reinterpret_cast<const uint16_t*>(header + 0x22);
         }
 
         size_t channels() const override
@@ -224,6 +309,11 @@ namespace starling
                 fclose(sound_file);
                 sound_file = nullptr;
             }
+        }
+
+        void validate_file()
+        {
+
         }
     private:
         // Master riff chunk.
