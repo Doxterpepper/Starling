@@ -11,6 +11,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS_DEBUG_INIT "-Wall")
 set(CMAKE_CXX_FLAGS_RELEASE_INIT "-Wall")
 
+add_compile_options(-Wall -Werror)
+#set(CMAKE_CXX_CLANG_TIDY "clang-tidy")
+
 find_package(Qt5 COMPONENTS Core Gui Widgets Svg REQUIRED)
 
 
