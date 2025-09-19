@@ -137,7 +137,7 @@ int main(int argc, char** argv)
 
     auto start_turnaround_time = std::chrono::high_resolution_clock::now();
     auto end_turnaround_time = std::chrono::high_resolution_clock::now();
-    for (size_t song_index = 1; song_index < argc; song_index++)
+    for (int song_index = 1; song_index < argc; song_index++)
     {
         auto start_header_load = std::chrono::high_resolution_clock::now();
         
