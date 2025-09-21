@@ -24,6 +24,12 @@ add_executable(${PROJECT_NAME}
     sound/playback.cpp
 )
 
+
+link_directories(
+    /home/dockoneal/Source/pulseaudio/build/src/libpulsecommon-17.0.so
+    /home/dockoneal/Source/pulseaudio/build/src/pulse/libpulse.so
+    /home/dockoneal/Source/pulseaudio/build/src/pulse/libpulse-simple.so
+    )
 target_link_libraries(${PROJECT_NAME}
     Qt5::Core Qt5::Gui Qt5::Widgets
     Qt5::Svg

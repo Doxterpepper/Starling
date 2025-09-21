@@ -29,7 +29,7 @@ namespace starling
     class SoundPlayer
     {
     public:
-        SoundPlayer(const std::string& application_name, const std::string& stream_name, size_t channels, size_t rate);
+        SoundPlayer(const std::string& application_name, const std::string& stream_name, size_t channels, size_t rate, size_t bits_per_sample);
         SoundPlayer(const SoundPlayer&) = delete;
         SoundPlayer(SoundPlayer&&);
         ~SoundPlayer();
@@ -41,7 +41,7 @@ namespace starling
         void play_buffer(const std::vector< buffer_type >& data, size_t length)
         {
             int error = 0;
-            int result = pa_simple_write(pulse_simple, data.data(), data.size(), &error);
+            int result = pa_simple_write(pulse_simple, data.data(), length, &error);
 
             if (result < 0)
             {

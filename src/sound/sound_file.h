@@ -5,6 +5,9 @@
 #include <string>
 #include <cstdio>
 #include <filesystem>
+#include <cstring>
+#include <cstdint>
+#include <cassert>
 
 namespace starling
 {
@@ -114,12 +117,12 @@ namespace starling
 
         size_t bytes_per_block() const
         {
-            return *reinterpret_cast<const uint16_t*>(header + 0x1e);
+            return *reinterpret_cast<const uint16_t*>(header + 0x20);
         }
 
         size_t bits_per_sample() const
         {
-            return *reinterpret_cast<const uint16_t*>(header + 0x20);
+            return *reinterpret_cast<const uint16_t*>(header + 0x22);
         }
 
         size_t channels() const override
@@ -151,7 +154,6 @@ namespace starling
             }
 
             int read_bytes = fread(buffer, sizeof(uint8_t), buffer_size, sound_file);
-
             return read_bytes;
         }
 
@@ -264,7 +266,7 @@ namespace starling
                             // buffer_element represents the final 'a' in the tag.
                             // The current file position is at the end of the last read buffer. So we need to move it
                             // back to the start of the data.
-                            long seek_difference = read_bytes - buffer_element - 1;
+                            long seek_difference = read_bytes - buffer_element - 1 - 4;
                             std::cout << "Found data tag. going back " << seek_difference << " bytes" << std::endl;;
                             fseek(sound_file, -seek_difference, SEEK_CUR); // Go back this distance.
                             fseek(sound_file, 0, SEEK_CUR);

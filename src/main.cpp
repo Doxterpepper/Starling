@@ -141,23 +141,6 @@ int main(int argc, char** argv)
     {
         auto start_header_load = std::chrono::high_resolution_clock::now();
         
-        /*
-        FILE* song_file_stream = nullptr;
-        song_file_stream = fopen(arguments[song_index].c_str(), "rb");
-
-        if (!song_file_stream)
-        {
-            std::cerr << "Could not open file - " << arguments[1] << std::endl;
-            return -1;
-        }
-
-        std::cout << "Playing file - " << arguments[1] << std::endl;
-        starling::WavFile wav_header;
-        size_t read = fread(&wav_header, sizeof(unsigned char), sizeof(wav_header), song_file_stream);
-        //std::cout << wav_header << std::endl;
-        fseek(song_file_stream, wav_header.data_size(), SEEK_CUR);
-
-        */
         std::unique_ptr<starling::WavFile2> sound_file = starling::open_sound_file(std::filesystem::path(arguments[song_index]));
         std::cout << sound_file.get() << std::endl;
 
@@ -169,9 +152,10 @@ int main(int argc, char** argv)
             std::cout << "Loaded header in " << header_load_duration.count() << " microseconds." << std::endl;
         }
 
-        auto playback = starling::SoundPlayer(arguments[0], "music", sound_file->channels(), sound_file->frequency());
+        auto playback = starling::SoundPlayer(arguments[0], "music", sound_file->channels(), sound_file->frequency(), sound_file->bits_per_sample());
         size_t read_bytes = 0;
-        std::vector< uint8_t > sound_buffer(BUFSIZE);
+        //std::vector< uint8_t > sound_buffer(1020);
+        std::vector< uint8_t > sound_buffer(sound_file->bytes_per_block() * 128);
         end_turnaround_time = std::chrono::high_resolution_clock::now();
 
         {
@@ -188,6 +172,7 @@ int main(int argc, char** argv)
         {
             //read_bytes = fread(sound_buffer.data(), sizeof(uint8_t), sound_buffer.size(), song_file_stream);
             read_bytes = sound_file->read_sound_chunk(sound_buffer.data(), sound_buffer.size());
+            //std::cout << "Read " << read_bytes << " bytes "; 
             if (read_bytes)
             {
                 playback.play_buffer(sound_buffer, read_bytes);

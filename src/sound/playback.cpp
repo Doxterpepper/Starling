@@ -5,9 +5,18 @@
 
 namespace starling
 {
-    SoundPlayer::SoundPlayer(const std::string& application_name, const std::string& stream_name, size_t channels = 2, size_t rate = 44100)
+    SoundPlayer::SoundPlayer(const std::string& application_name, const std::string& stream_name, size_t channels, size_t rate, size_t bits_per_sample)
     {
-        pulse_settings.format = PA_SAMPLE_S16NE;
+        if (bits_per_sample == 24)
+        {
+            pulse_settings.format = PA_SAMPLE_S24LE;
+
+        }
+        else if (bits_per_sample == 16)
+        {
+            pulse_settings.format = PA_SAMPLE_S16LE;
+        }
+
         pulse_settings.channels = channels;
         pulse_settings.rate = rate;
 
