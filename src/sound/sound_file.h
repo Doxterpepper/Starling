@@ -1,5 +1,6 @@
 
 #pragma once
+#include <vector>
 #include <algorithm>
 #include <iostream>
 #include <string>
@@ -9,6 +10,7 @@
 #include <cstdint>
 #include <cassert>
 #include <stdexcept>
+#include <memory>
 
 namespace starling
 {
@@ -114,6 +116,13 @@ namespace starling
 
         virtual size_t read_sound_chunk(uint8_t* buffer, size_t buffer_size) = 0;
 
+        virtual size_t bytes_per_block() const = 0;
+
+        virtual std::string name() const
+        {
+            return file_path;
+        }
+
         virtual void reset()
         {
             if (sound_file)
@@ -121,8 +130,6 @@ namespace starling
                 fseek(sound_file, 0, SEEK_SET);
             }
         }
-
-        //virtual friend std::ostream& operator<<(std::ostream& os, const SoundFile& wave_header) = 0;
 
         SoundFile& operator=(const SoundFile& other)
         {
@@ -191,7 +198,7 @@ namespace starling
             return *reinterpret_cast<const uint32_t*>(header + 0x1c);
         }
 
-        size_t bytes_per_block() const
+        size_t bytes_per_block() const override
         {
             return *reinterpret_cast<const uint16_t*>(header + 0x20);
         }
@@ -361,6 +368,9 @@ namespace starling
         size_t data_length = 0;
     };
 
+    /**
+    Deprecated. First iteration of Wav files. Superseded by WavFile2.
+    */
     class WavFile
     {
     public:
@@ -475,7 +485,7 @@ namespace starling
         unsigned char sampled_data[8];
     };
 
-    std::unique_ptr< WavFile2 > open_sound_file(const std::filesystem::path& file_path)
+    inline std::unique_ptr< SoundFile > open_sound_file(const std::filesystem::path& file_path)
     {
         if (file_path.extension() == ".wav")
         {

@@ -8,8 +8,13 @@ set(CMAKE_AUTORCC_ON)
 
 set(CMAKE_CXX_STANDARD 20)
 
-set(CMAKE_CXX_FLAGS_DEBUG_INIT "-Wall")
-set(CMAKE_CXX_FLAGS_RELEASE_INIT "-Wall")
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 add_compile_options(-Wall -Werror)
 #set(CMAKE_CXX_CLANG_TIDY "clang-tidy")
@@ -22,6 +27,7 @@ find_package(ALSA)
 add_executable(${PROJECT_NAME}
     main.cpp
     sound/playback.cpp
+    sound/playback_manager.cpp
 )
 
 
