@@ -135,26 +135,54 @@ int main(int argc, char** argv)
         arguments[arg_index] = std::string(argv[arg_index]);
     }
 
-    auto start_turnaround_time = std::chrono::high_resolution_clock::now();
-    auto end_turnaround_time = std::chrono::high_resolution_clock::now();
+    //
+    // The two longest operations are loading the file and creating a SoundPlayer. The exact reason for each one taking so long
+    // is not determined yet. Intuitively creating the file object will take time because it depends on disk reads. The creation of 
+    // the SoundPlayer requires setting up pulse audio. This very well could be an expensive operation.
+    //
+    // The theory now is that we load each file off the hot path and then only re-create the playback object if we need to. that is
+    // only if the settings change between files. Maybe there's a way to update the settings in our pulse setup without having to
+    // create the whole thing again.
+    //
+    // The best timing I have is for the creation of a SoundPlayer. This takes on the order of 24.8 ms on my machine. The bulk of the
+    // turnaround time was from this operation.
+    //
+    // Loading a file into memory takes around 20-50μs. This is fast, but without it it can take around 1-2μs to switch to the next song.
+    //
+    std::list< std::unique_ptr< starling::WavFile2 > > songs;
     for (int song_index = 1; song_index < argc; song_index++)
     {
-        auto start_header_load = std::chrono::high_resolution_clock::now();
-        
-        std::unique_ptr<starling::WavFile2> sound_file = starling::open_sound_file(std::filesystem::path(arguments[song_index]));
-        std::cout << sound_file.get() << std::endl;
+        auto file_path = std::filesystem::path(arguments[song_index]);
+        auto start_load_file = std::chrono::high_resolution_clock::now();
+        auto sound_file = starling::open_sound_file(file_path);
+        auto end_load_file = std::chrono::high_resolution_clock::now();
+        auto load_file_duration = duration_cast<std::chrono::microseconds>(end_load_file - start_load_file);
+        std::cout << "Load file into memory in " << load_file_duration.count() << " microseconds" << std::endl;
+        songs.push_back(std::move(starling::open_sound_file(std::filesystem::path(arguments[song_index]))));
+    }
 
-        auto stop_header_load = std::chrono::high_resolution_clock::now();
+    auto last_frequency = songs.front()->frequency();
+    auto last_channels = songs.front()->channels();
+    auto last_bits_per_sample = songs.front()->bits_per_sample();
+    auto playback = starling::SoundPlayer(arguments[0], "music", last_channels, last_frequency, last_bits_per_sample);
+
+    auto start_turnaround_time = std::chrono::high_resolution_clock::now();
+    auto end_turnaround_time = std::chrono::high_resolution_clock::now();
+    for (auto& sound_file : songs)
+    {
+        if (last_frequency != sound_file->frequency() || last_channels != sound_file->channels() || last_bits_per_sample != sound_file->bits_per_sample())
         {
-            // Not totally necessary, but I don't want to keep this memory around. Just scope it to the cout line and
-            // so it's released quickly.
-            auto header_load_duration = duration_cast<std::chrono::microseconds>(stop_header_load - start_header_load);
-            std::cout << "Loaded header in " << header_load_duration.count() << " microseconds." << std::endl;
+            auto create_playback_start = std::chrono::high_resolution_clock::now();
+            playback = starling::SoundPlayer(arguments[0], "music", sound_file->channels(), sound_file->frequency(), sound_file->bits_per_sample());
+            auto create_playback_stop = std::chrono::high_resolution_clock::now();
+            auto playback_create_duration = duration_cast<std::chrono::microseconds>(create_playback_stop - create_playback_start);
+            std::cout << "Create playback object in " << playback_create_duration.count() << " microseconds." << std::endl;
+            last_frequency = sound_file->frequency();
+            last_channels = sound_file->channels();
+            last_bits_per_sample = sound_file->bits_per_sample();
         }
 
-        auto playback = starling::SoundPlayer(arguments[0], "music", sound_file->channels(), sound_file->frequency(), sound_file->bits_per_sample());
         size_t read_bytes = 0;
-        //std::vector< uint8_t > sound_buffer(1020);
         std::vector< uint8_t > sound_buffer(sound_file->bytes_per_block() * 128);
         end_turnaround_time = std::chrono::high_resolution_clock::now();
 
@@ -170,18 +198,16 @@ int main(int argc, char** argv)
 
         do
         {
-            //read_bytes = fread(sound_buffer.data(), sizeof(uint8_t), sound_buffer.size(), song_file_stream);
             read_bytes = sound_file->read_sound_chunk(sound_buffer.data(), sound_buffer.size());
-            //std::cout << "Read " << read_bytes << " bytes "; 
             if (read_bytes)
             {
                 playback.play_buffer(sound_buffer, read_bytes);
             }
-        } while(read_bytes);
 
-        //fclose(song_file_stream);
+        } while(read_bytes);
 
         playback.flush();
         start_turnaround_time = std::chrono::high_resolution_clock::now();
+        //usleep(5000);// Testing the perceptible gap between songs.
     }
 }

@@ -8,9 +8,74 @@
 #include <cstring>
 #include <cstdint>
 #include <cassert>
+#include <stdexcept>
 
 namespace starling
 {
+    inline long file_search(FILE* binary_file, const std::vector<uint8_t>& pattern)
+    {
+        std::vector<uint8_t> search_buffer(255);
+        size_t pattern_index = 0;
+        size_t read_bytes = 0;
+
+        do
+        {
+            read_bytes = fread(search_buffer.data(), sizeof(search_buffer[0]), search_buffer.size(), binary_file);
+
+            for (size_t search_index = 0; search_index < read_bytes; search_index++)
+            {
+                if (pattern[pattern_index] == search_buffer[search_index])
+                {
+                    ++pattern_index;
+
+                    if (pattern_index >= pattern.size())
+                    {
+                        long current_position = ftell(binary_file);
+                        return static_cast<long>(current_position - read_bytes) + (static_cast<long>(search_index + 1) - static_cast<long>(pattern_index));
+                    }
+                }
+                else
+                {
+                    pattern_index = 0;
+                }
+            }
+        } while(read_bytes);
+        return -1;
+    }
+
+    inline long file_search(const std::filesystem::path& file_path, const std::vector<uint8_t>& pattern)
+    {
+        FILE* file = fopen(file_path.c_str(), "rb");
+        if (!file)
+        {
+            return -1;
+        }
+        
+        auto found_position = file_search(file, pattern);
+        fclose(file);
+        return found_position;
+    }
+
+    inline long file_search(const std::filesystem::path& file_path, const std::string& pattern)
+    {
+        std::vector<uint8_t> pattern_buffer(pattern.begin(), pattern.end());
+        return file_search(file_path, pattern_buffer);
+    }
+
+    inline long file_search(FILE* binary_file, const std::string& pattern)
+    {
+        std::vector<uint8_t> pattern_buffer(pattern.begin(), pattern.end());
+        return file_search(binary_file, pattern_buffer);
+    }
+
+    /**
+    * Thins are still subject to change, but for now I want to have a common interface between pulse audio and the sound files. That is to say
+    * pulse shouldn't need to worry about if it's a wav, flac, or mp3 file. Each file type should handle decoding and providing a valid buffer
+    * for pulseaudio to play.
+    *
+    * How well this works in practice isn't totally clear though, may be a good idea in theory but not in practice. The issue may be that I need
+    * SoundFile to have explicit ownership and lifetime. There can only be one. But other processes or objects may want access to them.
+    */
     class SoundFile
     {
     public:
@@ -45,6 +110,8 @@ namespace starling
 
         virtual size_t frequency() const = 0;
 
+        virtual size_t bits_per_sample() const = 0;
+
         virtual size_t read_sound_chunk(uint8_t* buffer, size_t buffer_size) = 0;
 
         //virtual friend std::ostream& operator<<(std::ostream& os, const SoundFile& wave_header) = 0;
@@ -78,6 +145,7 @@ namespace starling
             SoundFile(file_path)
         {
             load_header();
+            load_data_tag();
         }
 
         std::string file_Type_bloc_id() const
@@ -120,7 +188,17 @@ namespace starling
             return *reinterpret_cast<const uint16_t*>(header + 0x20);
         }
 
-        size_t bits_per_sample() const
+        std::string data_bloc_id() const
+        {
+            return std::string(reinterpret_cast<const char*>(header + 0x24));
+        }
+
+        size_t data_size() const
+        {
+            return data_length;
+        }
+
+        size_t bits_per_sample() const override
         {
             return *reinterpret_cast<const uint16_t*>(header + 0x22);
         }
@@ -134,17 +212,6 @@ namespace starling
         {
             return *reinterpret_cast<const uint32_t*>(header + 0x18);
         }
-
-        std::string data_bloc_id() const
-        {
-            return std::string(reinterpret_cast<const char*>(header + 0x24), 4);
-        }
-
-        size_t data_size() const
-        {
-            return *reinterpret_cast<const uint32_t*>(header + 0x28);
-        }
-
         size_t read_sound_chunk(uint8_t* buffer, size_t buffer_size) override
         {
             if (!sound_file)
@@ -153,6 +220,13 @@ namespace starling
                 seek_data();
             }
 
+            size_t current_position = ftell(sound_file);
+            if (current_position > data_length + data_block_offset + 8)
+            {
+                std::cout << "Done with audio data. Not playing the rest of the file." << std::endl;
+                return 0;
+            }
+            //std::cout << "Starting at offset " << offset << std::endl;
             int read_bytes = fread(buffer, sizeof(uint8_t), buffer_size, sound_file);
             return read_bytes;
         }
@@ -172,8 +246,6 @@ namespace starling
             os << "Bytes Per Block : " << wave_header.bytes_per_block() << std::endl;
             os << "Bits Per Sample : " << wave_header.bits_per_sample() << std::endl;
             os << std::endl;
-            os << "Data Bloc ID : " << wave_header.data_bloc_id() << std::endl;
-            os << "Sampled Data : " << wave_header.data_size() << std::endl;
             return os;
         }
 
@@ -192,8 +264,6 @@ namespace starling
             os << "Bytes Per Block : " << wave_header->bytes_per_block() << std::endl;
             os << "Bits Per Sample : " << wave_header->bits_per_sample() << std::endl;
             os << std::endl;
-            os << "Data Bloc ID : " << wave_header->data_bloc_id() << std::endl;
-            os << "Sampled Data : " << wave_header->data_size() << std::endl;
             return os;
         }
     private:
@@ -228,61 +298,33 @@ namespace starling
             }
         }
 
-        void seek_data()
+        void load_data_tag()
         {
-            if (data_bloc_id() == "LIST")
+            sound_file = fopen(file_path.c_str(), "rb");
+            data_block_offset = file_search(sound_file, "data");
+
+            // Put the cursor on the data block size. The data_block_offset points
+            // to the string "data". The data size is the next 4 bytes.
+            fseek(sound_file, data_block_offset + 4, SEEK_SET);
+
+            uint8_t data_buffer[4];
+            size_t bytes_read = fread(data_buffer, sizeof(uint8_t), sizeof(data_buffer), sound_file);
+
+            if (bytes_read < 4)
             {
-                fseek(sound_file, sizeof(header) + data_size(), SEEK_SET);
+                //std::cerr < "Only read " << bytes_read << " for the data length" << std::endl;
+                throw std::length_error("Could not parse data size.");
             }
 
-            std::vector<char> search_buffer(0xFF); // Arbitrary length of data to search.
+            data_length = *reinterpret_cast<uint32_t*>(data_buffer);
 
-            std::string search_tag = "data";
-            size_t tag_index = 0;
-            size_t read_bytes = 0;
-            do
-            {
-                //
-                // Read chunks of data and see if they contain the "data" key word. Search can span multiple buffers.
-                //
-                read_bytes = fread(search_buffer.data(), sizeof(search_buffer[0]), search_buffer.size(), sound_file);
-                std::cout << "Read " << read_bytes << " while searching" << std::endl;
+            fclose(sound_file);
+            sound_file = nullptr;
+        }
 
-                for (size_t buffer_element = 0; buffer_element < read_bytes; buffer_element++)
-                {
-                    // Go through the buffer read and look for each element of search_tag. This should ammount to the
-                    // key word "data". If we find the 'd' character, increment the tag_index to then search for 'a'.
-                    // do this until we've exhausted the letters in search_tag.
-                    // Once we've found the search tag, seek to the position right after the tag. This is where the
-                    // sound data begins.
-                    if (search_buffer[buffer_element] == search_tag[tag_index])
-                    {
-                        std::cout << search_buffer[buffer_element] << std::endl;
-                        ++tag_index;
-                        if (tag_index >= search_tag.length())
-                        {
-                            //
-                            // Seek to the beginning of the sound data. we've found the data tag and the current
-                            // buffer_element represents the final 'a' in the tag.
-                            // The current file position is at the end of the last read buffer. So we need to move it
-                            // back to the start of the data.
-                            long seek_difference = read_bytes - buffer_element - 1 - 4;
-                            std::cout << "Found data tag. going back " << seek_difference << " bytes" << std::endl;;
-                            fseek(sound_file, -seek_difference, SEEK_CUR); // Go back this distance.
-                            fseek(sound_file, 0, SEEK_CUR);
-                            size_t pos = ftell(sound_file);
-                            std::cout << "Currently at position - " << pos << std::endl;
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        tag_index = 0;
-                    }
-                }
-            }while(read_bytes);
-
-            std::cerr << "Could not find data tag."<< std::endl;
+        void seek_data()
+        {
+            fseek(sound_file, data_block_offset + 8, SEEK_SET);
         }
     private:
         // Master riff chunk.
@@ -307,6 +349,8 @@ namespace starling
         // 0x24 DataBlocID      (4 bytes) : Identifier « data »  (0x64, 0x61, 0x74, 0x61)
         // 0x28 DataSize        (4 bytes) : SampledData size
         unsigned char header[44];
+        size_t data_block_offset = 0;
+        size_t data_length = 0;
     };
 
     class WavFile
