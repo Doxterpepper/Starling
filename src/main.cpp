@@ -148,6 +148,7 @@ int main(int argc, char** argv)
     // turnaround time was from this operation.
     //
     // Loading a file into memory takes around 20-50μs. This is fast, but without it it can take around 1-2μs to switch to the next song.
+    // There is no guarantee it will always take this long. For one test file I saw load times on the order of 20ms.
     //
     std::list< std::unique_ptr< starling::WavFile2 > > songs;
     for (int song_index = 1; song_index < argc; song_index++)

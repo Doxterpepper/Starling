@@ -114,6 +114,14 @@ namespace starling
 
         virtual size_t read_sound_chunk(uint8_t* buffer, size_t buffer_size) = 0;
 
+        virtual void reset()
+        {
+            if (sound_file)
+            {
+                fseek(sound_file, 0, SEEK_SET);
+            }
+        }
+
         //virtual friend std::ostream& operator<<(std::ostream& os, const SoundFile& wave_header) = 0;
 
         SoundFile& operator=(const SoundFile& other)
