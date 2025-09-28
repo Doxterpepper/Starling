@@ -121,7 +121,7 @@ namespace starling
 
         virtual std::string name() const
         {
-            return file_path;
+            return file_path.filename();
         }
 
         virtual void reset()
