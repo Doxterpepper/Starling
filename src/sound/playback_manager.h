@@ -25,7 +25,7 @@ namespace starling
     public:
         PlaybackManager();
 
-        ~PlaybackManager() = default;
+        ~PlaybackManager();
 
         PlaybackManager(const PlaybackManager&) = delete;
         PlaybackManager(PlaybackManager&& other);

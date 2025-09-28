@@ -77,7 +77,6 @@ std::list< std::filesystem::path > searchMusic(const std::filesystem::path& musi
 int main(int argc, char** argv)
 {
     auto start_app_time = std::chrono::high_resolution_clock::now();
-    //std::string currentLocalPath = std::getenv("HOME");
 
     std::list<std::filesystem::path> file_list;
     for (int arg_index = 1; arg_index < argc; arg_index++)
@@ -86,6 +85,8 @@ int main(int argc, char** argv)
     }
 
     QApplication app(argc, argv);
+    //
+    // There is an internal thread that needs to be stopped on exit. Otherwise it looks like we get a crash on exit.
     starling::PlaybackManager player;
 
     QWidget* window = new QWidget();

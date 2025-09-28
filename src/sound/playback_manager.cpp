@@ -9,6 +9,14 @@ namespace starling
         worker_thread = std::thread(&PlaybackManager::playback_thread, this);
     }
 
+    PlaybackManager::~PlaybackManager()
+    {
+        running = false;
+        current_state = PlaybackState::Stopped;
+        worker_thread_lock.unlock();
+        worker_thread.join();
+    }
+
     PlaybackManager::PlaybackManager(PlaybackManager&& other)
     {
         file_queue = std::move(other.file_queue);
