@@ -86,16 +86,36 @@ int main(int argc, char** argv)
     }
 
     QApplication app(argc, argv);
+    starling::PlaybackManager player;
 
     QWidget* window = new QWidget();
     QHBoxLayout* windowLayout = new QHBoxLayout(window);
     window->setFixedSize(400, 400);
     window->setLayout(windowLayout);
 
-    QListView* songView = new QListView(window);
+    QListWidget songListWidget;
 
-    QStringListModel* songListmodel = new QStringListModel(window);
-    std::cout << songListmodel << std::endl;
+    for (const std::filesystem::path& path : file_list)
+    {
+        songListWidget.addItem(QString::fromStdString(path));
+    }
+    
+    QObject::connect(&songListWidget, &QListWidget::itemDoubleClicked, [&](QListWidgetItem* song)
+    {
+        std::cout << "clicked " << song->text().toStdString() << std::endl;
+        std::filesystem::path song_path(song->text().toStdString());
+        auto sound_file = starling::open_sound_file(song_path);
+        player.queue(std::move(sound_file));
+
+        if (player.state() != starling::PlaybackState::Playing)
+        {
+            player.play();
+        }
+    });
+
+    //QListView* songView = new QListView(window);
+
+    //QStringListModel* songListmodel = new QStringListModel(window);
     QStringList songList;
 
     for (const auto& song_path : file_list)
@@ -103,15 +123,17 @@ int main(int argc, char** argv)
         songList << QString::fromStdString(song_path.string());
     }
 
-    songListmodel->setStringList(songList);
-    songView->setModel(songListmodel);
+    //songListmodel->setStringList(songList);
+    //songView->setModel(songListmodel);
 
-    windowLayout->addWidget(songView);
+    windowLayout->addWidget(&songListWidget);
 
+    /*
     QObject::connect(songView, &QListView::clicked, [](const QModelIndex& model_index) {
         std::cout << "Clicked item " << model_index.column() << model_index.row();
         std::cout << " "<< model_index.model() << std::endl;
     });
+    */
 
     auto show_window_time = std::chrono::high_resolution_clock::now();
     window->show();
