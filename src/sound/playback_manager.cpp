@@ -65,8 +65,8 @@ namespace starling
             // I'd like a better method to do this, but for now we just track what each previous song settings were and
             // recreate the SoundPlayer if it needs new settings. It's a little awkward, but it works.
             //
-            // This is done for performance and speed reasons. The goal is to make the transitions from one song to the next
-            // as seamless as possible. So only do this work when absolutely necessary. It takes on the order of 24 ms to create
+            // This is done for performance reasons. The goal is to make the transitions from one song to the next
+            // as seamless as possible. So only do this work when absolutely necessary. It takes on the order of 24ms to create
             // a SoundPlayer. That's a noticeable gab in the sound.
             //
             auto create_playback_start = std::chrono::high_resolution_clock::now();
@@ -152,9 +152,14 @@ namespace starling
                 //
                 // This is the hot path. We don't want anything too expensive running in this thread or in this loop.
                 // One of the main goals of this project is low latency between songs. There should be no perceptible
-                // gap between songs like "Speak to me" and "Breathe (In the Air)".
+                // gap between songs like "Speak to me" and "Breathe (In the Air)". The most expensive call is
+                // setup_sound_player clocking in around 27ms. This function creates a starling::SoundPlayer which is
+                // pretty expensive. This player is only constructed when a new file playback type is encountered. The
+                // settings that will define this are channels, sampling rate (frequency), and bits per sample. If any
+                // of these settings change between files a new SoundPlayer is constructed and a gap between songs will
+                // likely be audible. The hope is that songs that should flow together will have the same settings.
                 //
-                // Sub 500μs should not be perceptible. I'm aiming for less than 50μs to be extra safe.
+                // Sub 500μs should not be perceptible from what I can tell. I'm aiming for less than 50μs to be extra safe.
                 // In my first iteration of this project, I had it at 2μs, but it was all running in the main thread
                 // with no function calls and on a ryzen 9 7950.
                 //
@@ -162,9 +167,10 @@ namespace starling
                 // like to get it even faster.
                 //
                 // Note: Turns out this is all running the debug builds. When running release with -O3 optimizations, it's
-                // a turnaround time of 1μs. Likely optimizes the function calls.
+                // a turnaround time of 1μs. Likely optimizes the function calls. That is between songs with the same playback
+                // parameters so reusing the SoundPlayer between songs.
+                //
                 SoundFile* song = current_song->get();
-                //std::cout << "Playing current song " << song->name() << std::endl;
                 setup_sound_player(song);
 
                 end_turnaround_time = std::chrono::high_resolution_clock::now();
@@ -190,6 +196,7 @@ namespace starling
         {
             return;
         }
+
         stop();
         --current_song;
         play();
@@ -201,6 +208,7 @@ namespace starling
         {
             return;
         }
+
         stop();
         ++current_song;
         play();
