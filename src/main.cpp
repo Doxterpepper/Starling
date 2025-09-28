@@ -113,19 +113,6 @@ int main(int argc, char** argv)
         }
     });
 
-    //QListView* songView = new QListView(window);
-
-    //QStringListModel* songListmodel = new QStringListModel(window);
-    QStringList songList;
-
-    for (const auto& song_path : file_list)
-    {
-        songList << QString::fromStdString(song_path.string());
-    }
-
-    //songListmodel->setStringList(songList);
-    //songView->setModel(songListmodel);
-
     windowLayout->addWidget(&songListWidget);
 
     /*

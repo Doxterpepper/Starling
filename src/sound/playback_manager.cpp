@@ -3,6 +3,12 @@
 
 namespace starling
 {
+    PlaybackManager::PlaybackManager()
+    {
+        worker_thread_lock.lock();
+        worker_thread = std::thread(&PlaybackManager::playback_thread, this);
+    }
+
     PlaybackManager::PlaybackManager(PlaybackManager&& other)
     {
         file_queue = std::move(other.file_queue);
@@ -70,30 +76,8 @@ namespace starling
 
     void PlaybackManager::play()
     {
-        //
-        // I had this down to a 2μs turnaround time in the original version where it ran in main. I imagine this is because there were
-        // no function calls involved. Now we're sitting at a 10μs turnaround assuming we don't need to re-create the sound_player.
-        //
         current_state = PlaybackState::Playing;
-
-        auto end_turnaround_time = std::chrono::high_resolution_clock::now();
-        auto start_turnaround_time = std::chrono::high_resolution_clock::now();
-
-        while (current_state == PlaybackState::Playing && current_song != file_queue.end())
-        {
-            SoundFile* song = current_song->get();
-            std::cout << "Playing current song " << song->name() << std::endl;
-            setup_sound_player(song);
-
-            end_turnaround_time = std::chrono::high_resolution_clock::now();
-            auto turnaround_time_duration = duration_cast<std::chrono::microseconds>(end_turnaround_time - start_turnaround_time);
-            std::cout << "turnaround in " << turnaround_time_duration.count() << " microseconds." << std::endl;
-
-            play_song(song);
-            start_turnaround_time = std::chrono::high_resolution_clock::now();
-            ++current_song;
-        }
-        current_state = PlaybackState::Paused;
+        worker_thread_lock.unlock();
     }
 
     void PlaybackManager::play_song(SoundFile* song)
@@ -121,9 +105,40 @@ namespace starling
         }
     }
 
+    void PlaybackManager::playback_thread()
+    {
+        while(running)
+        {
+            std::lock_guard<std::mutex> play_guard(worker_thread_lock);
+
+            //
+            // I had this down to a 2μs turnaround time in the original version where it ran in main. I imagine this is because there were
+            // no function calls involved. Now we're sitting at a 10μs turnaround assuming we don't need to re-create the sound_player.
+            //
+            auto end_turnaround_time = std::chrono::high_resolution_clock::now();
+            auto start_turnaround_time = std::chrono::high_resolution_clock::now();
+
+            while (current_state == PlaybackState::Playing && current_song != file_queue.end())
+            {
+                SoundFile* song = current_song->get();
+                std::cout << "Playing current song " << song->name() << std::endl;
+                setup_sound_player(song);
+
+                end_turnaround_time = std::chrono::high_resolution_clock::now();
+                auto turnaround_time_duration = duration_cast<std::chrono::microseconds>(end_turnaround_time - start_turnaround_time);
+                std::cout << "turnaround in " << turnaround_time_duration.count() << " microseconds." << std::endl;
+
+                play_song(song);
+                start_turnaround_time = std::chrono::high_resolution_clock::now();
+                ++current_song;
+            }
+        }
+    }
+
     void PlaybackManager::stop()
     {
         current_state = PlaybackState::Stopped;
+        bool _ = worker_thread_lock.try_lock();
     }
 
     void PlaybackManager::previous_song()
@@ -143,6 +158,7 @@ namespace starling
     void PlaybackManager::pause()
     {
         current_state = PlaybackState::Paused;
+        bool _ = worker_thread_lock.try_lock();
     }
 
     PlaybackState PlaybackManager::state() const

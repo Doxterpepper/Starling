@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <list>
+#include <thread>
 
 #include "sound_file.h"
 #include "playback.h"
@@ -22,7 +23,7 @@ namespace starling
     class PlaybackManager
     {
     public:
-        PlaybackManager() = default;
+        PlaybackManager();
 
         ~PlaybackManager() = default;
 
@@ -50,11 +51,17 @@ namespace starling
     private:
         void setup_sound_player(const SoundFile* song);
         void play_song(SoundFile* song);
+
+        void playback_thread();
     private:
         std::list< std::unique_ptr< SoundFile > > file_queue;
         PlaybackState current_state = PlaybackState::Paused;
         std::unique_ptr< SoundPlayer > sound_player = nullptr;
         std::list<std::unique_ptr<SoundFile>>::iterator current_song;
+
+        std::thread worker_thread;
+        std::mutex worker_thread_lock;
+        bool running = true;
 
         size_t previous_song_frequency = 0;
         size_t previous_song_channels = 0;
