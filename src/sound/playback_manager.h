@@ -18,7 +18,9 @@ namespace starling
     };
 
     /*
-    * Handle playback state.
+    * Handle playback state. Playback happens in a different thread owned by the PlaybackManager.
+    * playback manager maintains this thread and the states of this thread. The thread will block
+    * until there is something to play.
     */
     class PlaybackManager
     {

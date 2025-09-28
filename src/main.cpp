@@ -23,12 +23,15 @@
 #include <QWidget>
 #include <QApplication>
 #include <QHBoxLayout>
+#include <QVBoxLayout>
+#include <QPushButton>
 
 #include "sound/playback.h"
 #include "sound/sound_file.h"
 #include "sound/playback_manager.h"
 
 #include "file_entry.h"
+#include "ui/player_controls.h"
 
 bool isMusicFile(const std::filesystem::path& file)
 {
@@ -80,19 +83,25 @@ int main(int argc, char** argv)
 {
     auto start_app_time = std::chrono::high_resolution_clock::now();
 
+    //
+    // TODO: How can I speedup startup. It's a minor thing right now, but I'd
+    // like to ensure that Starling starts in a reasonable amount of time even
+    // for large numbers of files. Right now I'm not worried, but I think it won't
+    // scale for larger numbers of files.
+    //
     std::list<std::filesystem::path> file_list;
     for (int arg_index = 1; arg_index < argc; arg_index++)
     {
         file_list.push_back(std::filesystem::path(argv[arg_index]));
+        std::cout << argv[arg_index] << " ";
     }
+    std::cout << std::endl;
 
     QApplication app(argc, argv);
-    //
-    // There is an internal thread that needs to be stopped on exit. Otherwise it looks like we get a crash on exit.
     starling::PlaybackManager player;
 
     QWidget* window = new QWidget();
-    QHBoxLayout* windowLayout = new QHBoxLayout(window);
+    QVBoxLayout* windowLayout = new QVBoxLayout(window);
     window->setFixedSize(400, 400);
     window->setLayout(windowLayout);
 
@@ -112,6 +121,9 @@ int main(int argc, char** argv)
 
     windowLayout->addWidget(&songListWidget);
 
+    starling_ui::PlayerControls controls(player);
+    windowLayout->addWidget(&controls);
+
     auto show_window_time = std::chrono::high_resolution_clock::now();
     window->show();
     auto app_startup_time = duration_cast<std::chrono::microseconds>(show_window_time - start_app_time);
@@ -119,6 +131,9 @@ int main(int argc, char** argv)
 
     return app.exec();
 
+    // Everything after the return is legacy. I'm keeping it so I don't forget what I was doing
+    // Originally I just had a CLI while testing reading wav files. It may be helpful to have this
+    // again. Maybe propper argument parsing would be helpful for testing.
     if (argc < 2)
     {
         std::cout << "Please specify an audio file." << std::endl;

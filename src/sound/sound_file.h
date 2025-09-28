@@ -128,7 +128,9 @@ namespace starling
         {
             if (sound_file)
             {
-                fseek(sound_file, 0, SEEK_SET);
+                //fseek(sound_file, 0, SEEK_SET);
+                fclose(sound_file);
+                sound_file = nullptr;
             }
         }
 
@@ -298,9 +300,9 @@ namespace starling
 
             size_t read_bytes = fread(header, sizeof(header[0]), sizeof(header), sound_file);
 
-            if (read_bytes != sizeof(header[0]))
+            if (read_bytes != sizeof(header))
             {
-                std::cerr << "Expected to read a header of " << sizeof(header[0]) << " bytes but got " << read_bytes << std::endl;
+                std::cerr << "Expected to read a header of " << sizeof(header) << " bytes but got " << read_bytes << std::endl;
                 // raise exception.
             }
 

@@ -37,7 +37,6 @@ namespace starling
         const SoundFile* file_ptr = file.get();
         file_queue.push_back(std::move(file));
         current_song = file_queue.begin();
-        std::cout << "Queued song" << std::endl;
         return file_ptr;
     }
 
@@ -88,6 +87,10 @@ namespace starling
 
     void PlaybackManager::play()
     {
+        if (file_queue.size() == 0)
+        {
+            return;
+        }
         current_state = PlaybackState::Playing;
         worker_thread_lock.unlock();
     }
@@ -146,8 +149,22 @@ namespace starling
 
             while (current_state == PlaybackState::Playing && current_song != file_queue.end())
             {
+                //
+                // This is the hot path. We don't want anything too expensive running in this thread or in this loop.
+                // One of the main goals of this project is low latency between songs. There should be no perceptible
+                // gap between songs like "Speak to me" and "Breathe (In the Air)".
+                //
+                // Sub 500μs should not be perceptible. I'm aiming for less than 50μs to be extra safe.
+                // In my first iteration of this project, I had it at 2μs, but it was all running in the main thread
+                // with no function calls and on a ryzen 9 7950.
+                //
+                // On my laptop with an intel i7-8665U I can get a turnaround of 33μs. This is sufficient for now but I'd
+                // like to get it even faster.
+                //
+                // Note: Turns out this is all running the debug builds. When running release with -O3 optimizations, it's
+                // a turnaround time of 1μs. Likely optimizes the function calls.
                 SoundFile* song = current_song->get();
-                std::cout << "Playing current song " << song->name() << std::endl;
+                //std::cout << "Playing current song " << song->name() << std::endl;
                 setup_sound_player(song);
 
                 end_turnaround_time = std::chrono::high_resolution_clock::now();
@@ -169,6 +186,10 @@ namespace starling
 
     void PlaybackManager::previous_song()
     {
+        if (file_queue.size() == 0)
+        {
+            return;
+        }
         stop();
         --current_song;
         play();
@@ -176,6 +197,10 @@ namespace starling
 
     void PlaybackManager::next_song()
     {
+        if (file_queue.size() == 0)
+        {
+            return;
+        }
         stop();
         ++current_song;
         play();

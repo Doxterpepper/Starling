@@ -29,6 +29,7 @@ add_executable(${PROJECT_NAME}
     sound/playback.cpp
     sound/playback_manager.cpp
     file_entry.cpp
+    ui/player_controls.cpp
 )
 
 
