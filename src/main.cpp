@@ -32,13 +32,9 @@ bool isMusicFile(const std::filesystem::path& file)
 {
     const std::vector< std::string > extensions = {
         ".wave",
-        ".wav",
-        ".flac",
-        ".mp3",
-        ".m4a"
+        ".wav"
     };
 
-    std::cout << file << " - ";
     for (const auto& extension : extensions)
     {
         if (file.extension() == extension)
@@ -52,17 +48,25 @@ bool isMusicFile(const std::filesystem::path& file)
 
 std::list< std::filesystem::path > searchMusic(const std::filesystem::path& musicDir)
 {
+    //
+    // This doesn't scale. It will need to be cached eventually if the user has an absurd number of songs or searches
+    // their whole file system for songs.
+    // That's not even counting the fact that we'll want to load metadata for each song.
+    //
+    auto start_search_music = std::chrono::high_resolution_clock::now();
     std::list< std::filesystem::path > songs;
 
     for (const std::filesystem::directory_entry& entry : std::filesystem::recursive_directory_iterator(musicDir))
     {
-        std::cout << entry << std::endl;
         if (entry.is_regular_file() && isMusicFile(entry))
         {
             songs.push_back(entry);
         }
     }
 
+    auto end_search_music = std::chrono::high_resolution_clock::now();
+    auto search_music_duration = duration_cast<std::chrono::microseconds>(end_search_music - start_search_music);
+    std::cout << "Found " << songs.size() << " songs in " << search_music_duration.count() << "μs" << std::endl;
     return songs;
 }
 
@@ -72,42 +76,29 @@ std::list< std::filesystem::path > searchMusic(const std::filesystem::path& musi
 
 int main(int argc, char** argv)
 {
-    /*
-    std::string currentLocalPath = std::getenv("HOME");
-    
+    auto start_app_time = std::chrono::high_resolution_clock::now();
+    //std::string currentLocalPath = std::getenv("HOME");
+
+    std::list<std::filesystem::path> file_list;
+    for (int arg_index = 1; arg_index < argc; arg_index++)
     {
-        std::list< std::string > args;
-
-        for (size_t arg_index = 1; arg_index < argc; arg_index++)
-        {
-            args.push_back(argv[arg_index]);
-        }
-
-        if (args.size() > 0)
-        {
-            currentLocalPath = *args.begin();
-        }
+        file_list.push_back(std::filesystem::path(argv[arg_index]));
     }
 
-    std::cout << "Using directory - " << currentLocalPath << std::endl;
     QApplication app(argc, argv);
 
     QWidget* window = new QWidget();
     QHBoxLayout* windowLayout = new QHBoxLayout(window);
-    window->setFixedSize(2000, 1000);
+    window->setFixedSize(400, 400);
     window->setLayout(windowLayout);
 
-    std::list< std::filesystem::path > song_files = searchMusic(currentLocalPath);
-    std::cout << "Found " << song_files.size() << " songs." << std::endl;
-
     QListView* songView = new QListView(window);
-    songView->move(10, 10);
-    songView->resize(280, 180);
 
     QStringListModel* songListmodel = new QStringListModel(window);
+    std::cout << songListmodel << std::endl;
     QStringList songList;
 
-    for (const auto& song_path : song_files)
+    for (const auto& song_path : file_list)
     {
         songList << QString::fromStdString(song_path.string());
     }
@@ -115,13 +106,19 @@ int main(int argc, char** argv)
     songListmodel->setStringList(songList);
     songView->setModel(songListmodel);
 
-    std::cout << "here" << std::endl;
-    std::cout << songListmodel.rowCount() << std::endl;
-    //windowLayout->addWidget(songView);
+    windowLayout->addWidget(songView);
 
+    QObject::connect(songView, &QListView::clicked, [](const QModelIndex& model_index) {
+        std::cout << "Clicked item " << model_index.column() << model_index.row();
+        std::cout << " "<< model_index.model() << std::endl;
+    });
+
+    auto show_window_time = std::chrono::high_resolution_clock::now();
     window->show();
+    auto app_startup_time = duration_cast<std::chrono::microseconds>(show_window_time - start_app_time);
+    std::cout << "Application started in " << app_startup_time.count() << "μs." << std::endl;
+
     return app.exec();
-    */
 
     if (argc < 2)
     {

@@ -1,18 +1,10 @@
 # Starling
-This is a draft project to create a music player. I've had various issues with other players, and want to try my hand at creating something that fits me.
+Simple music player. The idea will be to simply have a queue of songs and play them via pulse audio. Eventually I'd like to expand to other platforms. For the first iteration of Starling, I want this to be super simple and straight forward. Don't overengineer it, but be conscious of performance.
+
+Using QT as the UI framework. It seems to suit the projects needs for now, but I reserve the right to change this in the future.
 
 # Supported File Formats
 - [x] WAV
 - [] FLAC
 - [] mp3
 - [] aiff
-
-# Building and Testing
-The build system is cmake. Compile with
-`cmake .`
-`make`
-
-Tests need to be run from the test directory. use the setup.sh script to get alias that handles running from the correct directory.
-`source scripts/setup.sh`
-
-`test # Runs unit tests`
