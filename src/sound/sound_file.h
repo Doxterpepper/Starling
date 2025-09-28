@@ -1,5 +1,6 @@
 
 #pragma once
+#include <list>
 #include <vector>
 #include <algorithm>
 #include <iostream>
@@ -494,4 +495,10 @@ namespace starling
 
         throw std::exception();
     }
+
+    //
+    // The list of std::unique_ptrs is really annoying. I want to have strict lifetime,
+    // but this is a little awkward. Will need to rethink this interface.
+    //
+    typedef std::list<std::unique_ptr<SoundFile>>::iterator QueuedSong;
 }

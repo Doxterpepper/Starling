@@ -28,6 +28,8 @@
 #include "sound/sound_file.h"
 #include "sound/playback_manager.h"
 
+#include "file_entry.h"
+
 bool isMusicFile(const std::filesystem::path& file)
 {
     const std::vector< std::string > extensions = {
@@ -98,30 +100,17 @@ int main(int argc, char** argv)
 
     for (const std::filesystem::path& path : file_list)
     {
-        songListWidget.addItem(QString::fromStdString(path));
+        auto song_file = player.queue(path);
+        songListWidget.addItem(new starling_ui::FileEntry(song_file));
     }
     
     QObject::connect(&songListWidget, &QListWidget::itemDoubleClicked, [&](QListWidgetItem* song)
     {
-        std::cout << "clicked " << song->text().toStdString() << std::endl;
-        std::filesystem::path song_path(song->text().toStdString());
-        auto sound_file = starling::open_sound_file(song_path);
-        player.queue(std::move(sound_file));
-
-        if (player.state() != starling::PlaybackState::Playing)
-        {
-            player.play();
-        }
+        starling_ui::FileEntry* file_entry = static_cast<starling_ui::FileEntry*>(song);
+        player.play(file_entry->playback_file());
     });
 
     windowLayout->addWidget(&songListWidget);
-
-    /*
-    QObject::connect(songView, &QListView::clicked, [](const QModelIndex& model_index) {
-        std::cout << "Clicked item " << model_index.column() << model_index.row();
-        std::cout << " "<< model_index.model() << std::endl;
-    });
-    */
 
     auto show_window_time = std::chrono::high_resolution_clock::now();
     window->show();

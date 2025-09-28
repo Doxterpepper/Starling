@@ -33,11 +33,13 @@ namespace starling
         PlaybackManager& operator=(const PlaybackManager&) = delete;
         PlaybackManager& operator=(PlaybackManager&&);
 
-        void queue(std::unique_ptr< SoundFile > file);
+        const SoundFile* queue(std::unique_ptr< SoundFile > file);
 
-        void queue(const std::filesystem::path& file_path);
+        const SoundFile* queue(const std::filesystem::path& file_path);
 
         void play();
+
+        void play(const SoundFile* queue_item);
 
         void previous_song();
 
@@ -57,7 +59,7 @@ namespace starling
         std::list< std::unique_ptr< SoundFile > > file_queue;
         PlaybackState current_state = PlaybackState::Paused;
         std::unique_ptr< SoundPlayer > sound_player = nullptr;
-        std::list<std::unique_ptr<SoundFile>>::iterator current_song;
+        QueuedSong current_song;
 
         std::thread worker_thread;
         std::mutex worker_thread_lock;

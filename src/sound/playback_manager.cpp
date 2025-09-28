@@ -32,17 +32,21 @@ namespace starling
         return *this;
     }
 
-    void PlaybackManager::queue(std::unique_ptr< SoundFile > file)
+    const SoundFile* PlaybackManager::queue(std::unique_ptr< SoundFile > file)
     {
+        const SoundFile* file_ptr = file.get();
         file_queue.push_back(std::move(file));
         current_song = file_queue.begin();
         std::cout << "Queued song" << std::endl;
+        return file_ptr;
     }
 
-    void PlaybackManager::queue(const std::filesystem::path& file_path)
+    const SoundFile* PlaybackManager::queue(const std::filesystem::path& file_path)
     {
         std::unique_ptr<SoundFile> sound_file = open_sound_file(file_path);
+        const SoundFile* file_ptr = sound_file.get();
         queue(std::move(sound_file));
+        return file_ptr;
     }
 
     void PlaybackManager::setup_sound_player(const SoundFile* song)
@@ -86,6 +90,20 @@ namespace starling
     {
         current_state = PlaybackState::Playing;
         worker_thread_lock.unlock();
+    }
+
+    void PlaybackManager::play(const SoundFile* queue_item)
+    {
+        current_state = PlaybackState::Stopped;
+        for (std::list<std::unique_ptr<SoundFile>>::iterator queued_song = file_queue.begin(); queued_song != file_queue.end(); ++queued_song)
+        {
+            if (queue_item == queued_song->get())
+            {
+                current_song = queued_song;
+            }
+        }
+
+        play();
     }
 
     void PlaybackManager::play_song(SoundFile* song)
