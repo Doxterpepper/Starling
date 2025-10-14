@@ -4,6 +4,7 @@
 #include <memory>
 #include <list>
 #include <thread>
+#include <condition_variable>
 
 #include "sound_file.h"
 #include "playback.h"
@@ -51,7 +52,7 @@ namespace starling
 
         void stop();
 
-        PlaybackState state() const;
+        PlaybackState state();
     private:
         void setup_sound_player(const SoundFile* song);
         void play_song(SoundFile* song);
@@ -59,11 +60,16 @@ namespace starling
         void playback_thread();
     private:
         std::list< std::unique_ptr< SoundFile > > file_queue;
+        std::mutex state_mutex;
+        std::condition_variable state_condition;
         PlaybackState current_state = PlaybackState::Paused;
         std::unique_ptr< SoundPlayer > sound_player = nullptr;
         QueuedSong current_song;
 
         std::thread worker_thread;
+        //
+        // TODO: Is there a better way to handle this besides a mutex?
+        //
         std::mutex worker_thread_lock;
         bool running = true;
 
