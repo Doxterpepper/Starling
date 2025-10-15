@@ -91,7 +91,7 @@ namespace starling
         {
             return;
         }
-        std::lock_guard<std::mutex>(state_mutex);
+        std::lock_guard<std::mutex> guard(state_mutex);
         current_state = PlaybackState::Playing;
         worker_thread_lock.unlock();
     }
