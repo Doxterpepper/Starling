@@ -21,9 +21,6 @@ add_compile_options(-Wall -Werror)
 
 find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
 
-
-find_package(ALSA)
-
 add_executable(${PROJECT_NAME}
     main.cpp
     sound/playback.cpp
