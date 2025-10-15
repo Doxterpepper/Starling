@@ -7,9 +7,6 @@
 
 #include <chrono>
 
-#include <alsa/asoundlib.h>
-
-
 #include <pulse/simple.h>
 #include <pulse/error.h>
 
