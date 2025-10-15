@@ -15,6 +15,11 @@
 
 namespace starling
 {
+    /**
+     * Searches a binary file for the provided pattern. Returns the position of the first index of the pattern and sets
+     * binary_file to the position of the buffer.
+     * Returns -1 if the pattern is not found.
+     */
     inline long file_search(FILE* binary_file, const std::vector<uint8_t>& pattern)
     {
         std::vector<uint8_t> search_buffer(255);
@@ -34,6 +39,7 @@ namespace starling
                     if (pattern_index >= pattern.size())
                     {
                         long current_position = ftell(binary_file);
+                        fseek(bianry_file, current_position, SEEK_SET);
                         return static_cast<long>(current_position - read_bytes) + (static_cast<long>(search_index + 1) - static_cast<long>(pattern_index));
                     }
                 }
@@ -72,12 +78,12 @@ namespace starling
     }
 
     /**
-    * Thins are still subject to change, but for now I want to have a common interface between pulse audio and the sound files. That is to say
+    * Things are still subject to change, but for now I want to have a common interface between pulse audio and the sound files. That is to say
     * pulse shouldn't need to worry about if it's a wav, flac, or mp3 file. Each file type should handle decoding and providing a valid buffer
     * for pulseaudio to play.
     *
-    * How well this works in practice isn't totally clear though, may be a good idea in theory but not in practice. The issue may be that I need
-    * SoundFile to have explicit ownership and lifetime. There can only be one. But other processes or objects may want access to them.
+    * How well this works in practice isn't totally clear though. The issue may be that I need SoundFile to have explicit ownership and lifetime. 
+    * There can only be one. But other processes or objects may want access to them.
     */
     class SoundFile
     {

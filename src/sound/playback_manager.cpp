@@ -91,6 +91,7 @@ namespace starling
         {
             return;
         }
+        std::lock_guard<std::mutex>(state_mutex);
         current_state = PlaybackState::Playing;
         worker_thread_lock.unlock();
     }
@@ -138,6 +139,16 @@ namespace starling
     {
         while(running)
         {
+            //
+            // The controlling thread will wait for the playback thread to turnaround to this point when changing the state. The playback thread
+            // will continually play the current song until it reaches the end of the sound data. Changing the state from Playing to Stopped or Paused
+            // will break out of that playing loop and eventually reach this point. We notify all when we reach this point so they can continue under
+            // the assumption that we are officially stopped.
+            //
+            // This allows for actions like previous_song, or next_song where we want to enter a stopped state, change the iterator postion, then play
+            // again.
+            //
+            state_condition.notify_all();
             std::lock_guard<std::mutex> play_guard(worker_thread_lock);
 
             //
@@ -146,8 +157,7 @@ namespace starling
             //
             auto end_turnaround_time = std::chrono::high_resolution_clock::now();
             auto start_turnaround_time = std::chrono::high_resolution_clock::now();
-
-            while (current_state == PlaybackState::Playing && current_song != file_queue.end())
+            while (state() == PlaybackState::Playing && current_song != file_queue.end())
             {
                 //
                 // This is the hot path. We don't want anything too expensive running in this thread or in this loop.
@@ -179,15 +189,21 @@ namespace starling
 
                 play_song(song);
                 start_turnaround_time = std::chrono::high_resolution_clock::now();
-                ++current_song;
+
+                if (state() == PlaybackState::Playing)
+                {
+                    ++current_song;
+                }
             }
         }
     }
 
     void PlaybackManager::stop()
     {
+        std::unique_lock<std::mutex> state_lock(state_mutex);
         current_state = PlaybackState::Stopped;
         bool _ = worker_thread_lock.try_lock();
+        state_condition.wait(state_lock);
     }
 
     void PlaybackManager::previous_song()
@@ -216,12 +232,15 @@ namespace starling
 
     void PlaybackManager::pause()
     {
+        std::unique_lock<std::mutex> state_lock(state_mutex);
         current_state = PlaybackState::Paused;
         bool _ = worker_thread_lock.try_lock();
+        state_condition.wait(state_lock);
     }
 
-    PlaybackState PlaybackManager::state() const
+    PlaybackState PlaybackManager::state()
     {
+        std::lock_guard<std::mutex> state_lock(state_mutex);
         return current_state;
     }
 }
