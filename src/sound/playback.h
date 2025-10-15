@@ -18,14 +18,11 @@ namespace starling
     // This seems better than ALSA, and probably more portable for different linux systems. I'll consider ALSA later
     // if it becomes a need. I think my audience will usually have pulseaudio these days.
     //
-    // Pulse audio is clear in its documentation that they are not thread safe. I plan on a multithreaded design, though,
-    // but I plan to only allow pulse audio to run on one thread. The theory right now is to have a continuous buffer
-    // handed to pulse audio that is irrespective of the song being played. Another thread should manage the song queue,
-    // reading the song data, transcoding it if necessary, and adding it to the play buffer. This should allow seamless
-    // transition between songs.
+    // Pulse audio is clear in its documentation that they are not thread safe. I plan on a multithreaded design, and
+    // I plan to only allow pulse audio to run on one thread.
     //
     // In the case of skipping or tracking, a little delay should be okay. But the primary goal is to remove all delay
-    // between songs. This way we don't get gaps, even small ones, between songs that should flow seamlessly.
+    // between songs.
     class SoundPlayer
     {
     public:
