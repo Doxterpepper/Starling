@@ -271,4 +271,18 @@ namespace starling
         std::cout << "Current song ptr - " << current_song->get() << std::endl;
         return current_song->get();
     }
+
+    void PlaybackManager::seek(size_t seek_seconds)
+    {
+        std::lock_guard current_song_lock(current_song_mutex);
+        auto current_song_ptr = current_song->get();
+        current_song_ptr->seek_song(seek_seconds);
+    }
+
+    size_t PlaybackManager::current_song_length_seconds() const
+    {
+        std::lock_guard current_song_lock(current_song_mutex);
+        auto current_song_ptr = current_song->get();
+        return current_song_ptr->seek_song(seek_seconds);
+    }
 }

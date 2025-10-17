@@ -256,9 +256,7 @@ namespace starling
                 return 0;
             }
 
-            std::cout << "Etner current time" << std::endl;
             size_t current_offset = ftell(sound_file);
-            std::cout << "offset - " << current_offset << std::endl;
             size_t current_position_sound_data = current_offset - (data_block_offset + 4);
             return current_position_sound_data / file_bytes_in_1s;
         }
@@ -284,7 +282,6 @@ namespace starling
                 std::cout << "Done with audio data. Not playing the rest of the file." << std::endl;
                 return 0;
             }
-            //std::cout << "Starting at offset " << offset << std::endl;
             int read_bytes = fread(buffer, sizeof(uint8_t), buffer_size, sound_file);
             return read_bytes;
         }
