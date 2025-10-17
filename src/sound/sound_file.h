@@ -125,10 +125,16 @@ namespace starling
 
         virtual size_t bytes_per_block() const = 0;
 
+        virtual size_t sound_length() const = 0;
+
+        virtual size_t current_time() const = 0;
+
         virtual std::string name() const
         {
             return file_path.filename();
         }
+
+        virtual void seek_song(size_t time) = 0;
 
         virtual void reset()
         {
@@ -170,6 +176,7 @@ namespace starling
         {
             load_header();
             load_data_tag();
+            file_bytes_in_1s = channels() * (bits_per_sample() / 8) * frequency();
         }
 
         std::string file_Type_bloc_id() const
@@ -236,6 +243,33 @@ namespace starling
         {
             return *reinterpret_cast<const uint32_t*>(header + 0x18);
         }
+
+        size_t sound_length() const override
+        {
+            return data_length / (bits_per_sample() * channels() * bits_per_sample() / 8);
+        }
+
+        size_t current_time() const override
+        {
+            if (sound_file == nullptr)
+            {
+                return 0;
+            }
+
+            std::cout << "Etner current time" << std::endl;
+            size_t current_offset = ftell(sound_file);
+            std::cout << "offset - " << current_offset << std::endl;
+            size_t current_position_sound_data = current_offset - (data_block_offset + 4);
+            return current_position_sound_data / file_bytes_in_1s;
+        }
+
+        void seek_song(size_t offset_seconds) override
+        {
+            size_t bytes_offset = offset_seconds * file_bytes_in_1s;
+            size_t time_position = data_block_offset + 4 + bytes_offset;
+            fseek(sound_file, time_position, SEEK_SET);
+        }
+
         size_t read_sound_chunk(uint8_t* buffer, size_t buffer_size) override
         {
             if (!sound_file)
@@ -375,6 +409,7 @@ namespace starling
         unsigned char header[44];
         size_t data_block_offset = 0;
         size_t data_length = 0;
+        size_t file_bytes_in_1s = 0;
     };
 
     /**

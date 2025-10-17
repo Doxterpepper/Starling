@@ -216,7 +216,19 @@ namespace starling
         }
 
         stop();
-        --current_song;
+        auto* current_song_ptr = current_song->get();
+        if (current_song_ptr->current_time() > 0 && current_song != file_queue.begin())
+        {
+            std::cout << "Going back a song." << std::endl;
+            {
+                std::lock_guard song_lock(current_song_mutex);
+                --current_song;
+            }
+        }
+        else
+        {
+            current_song_ptr->seek_song(0);
+        }
         play();
     }
 
@@ -228,8 +240,15 @@ namespace starling
         }
 
         stop();
-        ++current_song;
-        play();
+        auto* current_song_ptr = current_song->get();
+        if (current_song != file_queue.end())
+        {
+            {
+                std::lock_guard song_lock(current_song_mutex);
+                ++current_song;
+            }
+            play();
+        }
     }
 
     void PlaybackManager::pause()
@@ -244,5 +263,12 @@ namespace starling
     {
         std::lock_guard<std::mutex> state_lock(state_mutex);
         return current_state;
+    }
+
+    const SoundFile* PlaybackManager::currently_playing_song()
+    {
+        std::lock_guard song_lock(current_song_mutex);
+        std::cout << "Current song ptr - " << current_song->get() << std::endl;
+        return current_song->get();
     }
 }

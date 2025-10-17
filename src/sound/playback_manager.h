@@ -53,6 +53,8 @@ namespace starling
         void stop();
 
         PlaybackState state();
+
+        const SoundFile* currently_playing_song();
     private:
         void setup_sound_player(const SoundFile* song);
         void play_song(SoundFile* song);
@@ -61,6 +63,7 @@ namespace starling
     private:
         std::list< std::unique_ptr< SoundFile > > file_queue;
         std::mutex state_mutex;
+        std::mutex current_song_mutex;
         std::condition_variable state_condition;
         PlaybackState current_state = PlaybackState::Paused;
         std::unique_ptr< SoundPlayer > sound_player = nullptr;
