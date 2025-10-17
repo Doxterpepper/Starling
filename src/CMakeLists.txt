@@ -19,10 +19,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 add_compile_options(-Wall -Werror)
 #set(CMAKE_CXX_CLANG_TIDY "clang-tidy")
 
-find_package(Qt5 COMPONENTS Core Gui Widgets Svg REQUIRED)
-
-
-find_package(ALSA)
+find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
 
 add_executable(${PROJECT_NAME}
     main.cpp
@@ -40,8 +37,6 @@ link_directories(
     )
 target_link_libraries(${PROJECT_NAME}
     Qt5::Core Qt5::Gui Qt5::Widgets
-    Qt5::Svg
-    ALSA::ALSA
     pulse
     pulse-simple
 )

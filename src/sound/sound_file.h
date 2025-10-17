@@ -39,7 +39,7 @@ namespace starling
                     if (pattern_index >= pattern.size())
                     {
                         long current_position = ftell(binary_file);
-                        fseek(bianry_file, current_position, SEEK_SET);
+                        fseek(binary_file, current_position, SEEK_SET);
                         return static_cast<long>(current_position - read_bytes) + (static_cast<long>(search_index + 1) - static_cast<long>(pattern_index));
                     }
                 }

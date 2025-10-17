@@ -91,7 +91,7 @@ namespace starling
         {
             return;
         }
-        std::lock_guard<std::mutex>(state_mutex);
+        std::lock_guard<std::mutex> guard(state_mutex);
         current_state = PlaybackState::Playing;
         worker_thread_lock.unlock();
     }
@@ -202,6 +202,8 @@ namespace starling
     {
         std::unique_lock<std::mutex> state_lock(state_mutex);
         current_state = PlaybackState::Stopped;
+        // I don't care about the result of try_lock.
+        #pragma GCC diagnostic ignored "-Wunused-variable"
         bool _ = worker_thread_lock.try_lock();
         state_condition.wait(state_lock);
     }
