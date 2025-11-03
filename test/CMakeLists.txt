@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.1)
+cmake_minimum_required(VERSION 3.20)
 
 find_package(Catch2 3 REQUIRED)
 # These tests can use the Catch2-provided main

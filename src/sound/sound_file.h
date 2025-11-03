@@ -257,12 +257,23 @@ namespace starling
             }
 
             size_t current_offset = ftell(sound_file);
+            //
+            // Remember, the data_block_offset is the offset to the string "data". It is followed by 4 bytes representing the
+            // length of the data. So the beginning of the sound data is that data string + 4 bytes.
+            //
+            // To get the current time index, take the current position in the file, subtract the headers (everything up to the
+            // "data" string and the length.) and then divide by the number of bytes that represent 1 second of time.
+            //
             size_t current_position_sound_data = current_offset - (data_block_offset + 4);
             return current_position_sound_data / file_bytes_in_1s;
         }
 
         void seek_song(size_t offset_seconds) override
         {
+            //
+            // The end of the header/metadata is marked by the "data" string and then 4 bytes representing
+            // the length of the data section. Find that position in the file, then go the provided seconds
+            // forward.
             size_t bytes_offset = offset_seconds * file_bytes_in_1s;
             size_t time_position = data_block_offset + 4 + bytes_offset;
             fseek(sound_file, time_position, SEEK_SET);
