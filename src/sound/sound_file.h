@@ -246,7 +246,7 @@ namespace starling
 
         size_t sound_length() const override
         {
-            return data_length / (bits_per_sample() * channels() * bits_per_sample() / 8);
+            return data_length / file_bytes_in_1s;
         }
 
         size_t current_time() const override

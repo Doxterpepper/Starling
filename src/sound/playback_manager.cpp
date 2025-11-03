@@ -267,8 +267,11 @@ namespace starling
 
     const SoundFile* PlaybackManager::currently_playing_song()
     {
+        //
+        // TODO: I don't like this whole design. It feels clunky and I'm seeing weird
+        // behavior when switching songs. This needs to be thought out more clearly.
+        //
         std::lock_guard song_lock(current_song_mutex);
-        std::cout << "Current song ptr - " << current_song->get() << std::endl;
         return current_song->get();
     }
 

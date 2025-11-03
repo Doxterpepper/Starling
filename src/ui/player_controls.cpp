@@ -1,5 +1,6 @@
 
 #include "player_controls.h"
+#include "song_time.h"
 #include <chrono>
 
 namespace starling_ui
@@ -70,6 +71,8 @@ namespace starling_ui
     {
         if (playback_manager.state() == starling::PlaybackState::Playing)
         {
+            auto current_song = playback_manager.currently_playing_song();
+            tracking->setRange(0, current_song->sound_length());
             play_pause_button->setText("pause");
             timer_lock.unlock();
         }
@@ -86,38 +89,8 @@ namespace starling_ui
 
     QString PlayerControls::current_time_string() const
     {
-        int hours = current_time / 60 / 60;
-        int minutes = current_time / 60;
-        int seconds = current_time % 60;
 
-        std::string final_str = "";
-        if (hours)
-        {
-            if (hours < 10)
-            {
-                final_str += "0";
-            }
-            std::string hours_str = std::to_string(hours);
-            final_str += hours_str + ":";
-        }
-
-        std::string minutes_str = std::to_string(minutes);
-        std::string seconds_str = std::to_string(seconds);
-
-        if (minutes < 10)
-        {
-            final_str += "0";
-        }
-        final_str += minutes_str;
-        final_str += ":";
-        
-        if (seconds < 10)
-        {
-            final_str += "0";
-        }
-        final_str += seconds_str;
-
-        return QString::fromStdString(final_str);
+        return QString::fromStdString(time_from_int(current_time));
     }
 
     void PlayerControls::update_time()
@@ -127,6 +100,7 @@ namespace starling_ui
             {
                 std::lock_guard time_callback(timer_lock);
             }
+
             std::this_thread::sleep_for(1s);
             auto currently_playing_song = playback_manager.currently_playing_song();
             if (currently_playing_song == nullptr)
@@ -139,7 +113,7 @@ namespace starling_ui
             }
 
             time->setText(current_time_string());
-
+            tracking->setValue(current_time);
         }
     }
 }
