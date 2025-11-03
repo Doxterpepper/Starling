@@ -55,6 +55,8 @@ namespace starling
         PlaybackState state();
 
         const SoundFile* currently_playing_song();
+
+        void seek(size_t seek_seconds);
     private:
         void setup_sound_player(const SoundFile* song);
         void play_song(SoundFile* song);
