@@ -41,6 +41,13 @@ namespace starling_ui
         QObject::connect(play_pause_button, &QAbstractButton::clicked, [&](){ play_pause(); });
         QObject::connect(previous_song_button, &QAbstractButton::clicked, [&]() { prev_song(); });
         QObject::connect(next_song_button, &QAbstractButton::clicked, [&]() { next_song(); });
+
+        // Emits on any change to the slider, including the time poll.
+        // QObject::connect(tracking, &QSlider::valueChanged, [](int value){ std::cout << "Slider value to " << value << std::endl; });
+        QObject::connect(tracking, &QSlider::sliderMoved, [&](int value){ slider_move(value); });
+        QObject::connect(tracking, &QSlider::sliderReleased, [&](){ slider_release(); });
+        QObject::connect(tracking, &QSlider::sliderPressed, [&](){ slider_press(); });
+        
     }
 
     void PlayerControls::play_pause()
@@ -97,11 +104,11 @@ namespace starling_ui
     {
         while(running)
         {
+            std::this_thread::sleep_for(1s);
             {
                 std::lock_guard time_callback(timer_lock);
             }
 
-            std::this_thread::sleep_for(1s);
             auto currently_playing_song = playback_manager.currently_playing_song();
             if (currently_playing_song == nullptr)
             {
@@ -115,5 +122,27 @@ namespace starling_ui
             time->setText(current_time_string());
             tracking->setValue(current_time);
         }
+    }
+
+    void PlayerControls::slider_move(int value)
+    {
+        current_time = value;
+        time->setText(current_time_string());
+    }
+
+    void PlayerControls::slider_press()
+    {
+        timer_lock.lock();
+    }
+
+    void PlayerControls::slider_release()
+    {
+        seek_song(current_time);
+        timer_lock.unlock();
+    }
+
+    void PlayerControls::seek_song(int seconds)
+    {
+        playback_manager.seek(seconds);
     }
 }

@@ -35,6 +35,14 @@ namespace starling_ui
         QString current_time_string() const;
 
         void update_time();
+
+        void slider_move(int value);
+
+        void slider_release();
+
+        void seek_song(int seconds);
+
+        void slider_press();
     private:
         QGridLayout* layout;
         QPushButton* previous_song_button;
