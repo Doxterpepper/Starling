@@ -42,7 +42,7 @@ namespace starling_ui
         QObject::connect(previous_song_button, &QAbstractButton::clicked, [&]() { prev_song(); });
         QObject::connect(next_song_button, &QAbstractButton::clicked, [&]() { next_song(); });
 
-        // Emits on any change to the slider, including the time poll.
+        // Emits on any change to the slider, including the time poll. Could be useful later so I'm leaving the signature for reference.
         // QObject::connect(tracking, &QSlider::valueChanged, [](int value){ std::cout << "Slider value to " << value << std::endl; });
         QObject::connect(tracking, &QSlider::sliderMoved, [&](int value){ slider_move(value); });
         QObject::connect(tracking, &QSlider::sliderReleased, [&](){ slider_release(); });

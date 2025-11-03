@@ -8,7 +8,7 @@ namespace starling_ui
     std::string time_from_int(size_t time_seconds)
     {
         int hours = time_seconds / 60 / 60;
-        int minutes = time_seconds / 60;
+        int minutes = (time_seconds / 60) % 60;
         int seconds = time_seconds % 60;
 
         std::string final_str = "";
