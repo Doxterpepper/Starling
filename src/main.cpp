@@ -109,16 +109,18 @@ int main(int argc, char** argv)
         auto song_file = player.queue(path);
         songListWidget.addItem(new starling_ui::FileEntry(song_file));
     }
+
+    starling_ui::PlayerControls controls(player);
     
     QObject::connect(&songListWidget, &QListWidget::itemDoubleClicked, [&](QListWidgetItem* song)
     {
         starling_ui::FileEntry* file_entry = static_cast<starling_ui::FileEntry*>(song);
         player.play(file_entry->playback_file());
+        controls.set_playing();
     });
 
     windowLayout->addWidget(&songListWidget);
 
-    starling_ui::PlayerControls controls(player);
     windowLayout->addWidget(&controls);
 
     auto show_window_time = std::chrono::high_resolution_clock::now();

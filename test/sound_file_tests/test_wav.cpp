@@ -34,6 +34,8 @@ TEST_CASE("Read wav header.", "[wav]")
     CHECK(wav_file.bytes_per_block() == 6);
     CHECK(wav_file.bits_per_sample() == 24);
     CHECK(wav_file.data_size() == 7938000);
+    CHECK(wav_file.sound_length() == 30);
+    CHECK(wav_file.current_time() == 0);
 }
 
 TEST_CASE("Read 24-bit wav buffer", "[wav]")
@@ -62,6 +64,8 @@ TEST_CASE("Read 24-bit wav buffer", "[wav]")
     CHECK(wav_file.bytes_per_block() == 6);
     CHECK(wav_file.bits_per_sample() == 24);
     CHECK(wav_file.data_size() == 7938000);
+    CHECK(wav_file.sound_length() == 30);
+    CHECK(wav_file.current_time() == 0);
 
     std::vector<uint8_t> expected_buffer = {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -123,4 +127,29 @@ TEST_CASE("Search binary file 2", "[binary_search]")
     long position = starling::file_search("test-file.bin", pattern);
 
     CHECK(position == 13);
+}
+
+TEST_CASE("Read 5 seconds of file.", "[wav]")
+{
+    auto start_wav_creation = std::chrono::high_resolution_clock::now();
+    starling::WavFile2 wav_file("./sound_file_tests/sine-24le.wav");
+    auto end_wav_creation = std::chrono::high_resolution_clock::now();
+
+    size_t target_seconds = 5;
+    size_t current_seconds = 0;
+    size_t max_reads = 5000;
+    size_t current_reads = 0;
+
+    std::vector<uint8_t> buffer(wav_file.bytes_per_block() * 128);
+    while (current_reads < max_reads && current_seconds < target_seconds)
+    {
+
+
+        size_t read_bytes = wav_file.read_sound_chunk(buffer.data(), buffer.size());
+        current_seconds = wav_file.current_time();
+        ++current_reads;
+    }
+
+    CHECK(current_reads < max_reads);
+    CHECK(current_seconds == target_seconds);
 }
