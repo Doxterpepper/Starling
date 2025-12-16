@@ -8,6 +8,7 @@
 
 #include "sound_file.h"
 #include "playback.h"
+#include "music_queue.h"
 
 namespace starling
 {

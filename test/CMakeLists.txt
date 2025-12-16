@@ -9,6 +9,7 @@ find_package(Catch2 3 REQUIRED)
 add_executable(starling-tests
     sound_file_tests/test_wav.cpp
     time_tests/song_time_tests.cpp
+    music_queue_tests/queue_tests.cpp
     
     ${CMAKE_SOURCE_DIR}/src/ui/song_time.cpp
 )

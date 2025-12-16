@@ -14,5 +14,10 @@ function unit_tests() {
     popd
 }
 
+function build_project() {
+    cmake . && make -j 4
+}
+
+alias build="pushd $PROJECT_DIR; build_project; popd"
 alias test="unit_tests"
 alias memtests="make -j4 && valgrind --leak-check=full $PROJECT_DIR/src/starling $PROJECT_DIR/test/sound_file_tests/sine-24le.wav"
