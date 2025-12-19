@@ -1,6 +1,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#define __TSET_DEF__
 #include <sound/player_cache.h>
 
 #include "mock/mock_sound_file.h"

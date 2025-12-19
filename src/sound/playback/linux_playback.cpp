@@ -1,5 +1,6 @@
 
-#ifdef __linux__
+#ifdef __TEST_DEF__
+#elif __linux__
 #include <sound/playback.h>
 
 #include <iostream>

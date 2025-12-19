@@ -1,6 +1,12 @@
 
 #pragma once
 
+#ifdef _WIN32
+    #error "Windows not supported yet."
+#elif __APPLE__
+    #error "Apple not support yet"
+#endif
+
 #include <string>
 #include <memory>
 #include <list>
@@ -11,8 +17,6 @@
 #elif __linux__
 #include <pulse/simple.h>
 #include <pulse/error.h>
-#elif _WIN32
-#elif __APPLE__
 #endif
 
 namespace starling
@@ -55,10 +59,10 @@ namespace starling
                 std::cerr << "pa_simple_write_failed " << pa_strerror(error) << std::endl;
             }
         }
-    #elif _WIN32
-        #error "Windows not supported yet."
-    #elif __APPLE__
-        #error "Apple not support yet"
+    #endif
+
+    #ifdef __TEST_DEF__
+        int called() const;
     #endif
 
         void flush();
@@ -69,10 +73,6 @@ namespace starling
     #elif __linux__
         pa_simple* pulse_simple = nullptr;
         pa_sample_spec pulse_settings{};
-    #elif _WIN32
-        #error "Windows not supported yet."
-    #elif __APPLE__
-        #error "Apple not support yet"
     #endif
     };
 }

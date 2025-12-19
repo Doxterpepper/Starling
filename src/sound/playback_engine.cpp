@@ -10,6 +10,7 @@ namespace starling
 
     void PlaybackEngine::play_song(SoundFile* song)
     {
+        running = true;
         auto player = player_cache->get_player(song);
 
         size_t read_bytes = 0;

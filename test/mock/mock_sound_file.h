@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <functional>
+
 class MockSoundFile : public starling::SoundFile
 {
 public:
@@ -20,14 +22,21 @@ public:
         return bps;
     }
 
-    size_t read_sound_chunk(uint8_t*, size_t) override
+    size_t read_sound_chunk(uint8_t* data, size_t data_length) override
     {
+        read_callback();
+        if (mock_sound_length > 0)
+        {
+            std::memset(data, 0, data_length);
+            --mock_sound_length;
+            return data_length;
+        }
         return 0;
     }
 
     size_t bytes_per_block() const override
     {
-        return 0;
+        return bpb;
     }
 
     size_t sound_length() const override
@@ -67,8 +76,26 @@ public:
     {
         bps = new_bps;
     }
+
+    void set_bytes_per_block(size_t bytes)
+    {
+        bpb = bytes;
+    }
+
+    void set_num_sound_chunks(size_t chunks)
+    {
+        mock_sound_length = chunks;
+    }
+
+    void set_read_callback(std::function<void()> callback)
+    {
+        read_callback = callback;
+    }
 private:
     size_t freq = 0;
     size_t chan = 0;
     size_t bps = 0;
+    size_t bpb = 0;
+    size_t mock_sound_length = 1;
+    std::function<void()> read_callback = []() {};
 };
