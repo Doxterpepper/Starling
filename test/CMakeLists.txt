@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
+set(CMAKE_CXX_STANDARD 20)
 find_package(Catch2 3 REQUIRED)
 # These tests can use the Catch2-provided main
 #add_executable(tests test.cpp)
@@ -14,9 +15,11 @@ add_executable(starling-tests
     music_queue_tests/queue_tests.cpp
     player_cache_tests.cpp
     playback_engine_tests.cpp
+    playback_manager_tests.cpp
     
     ${CMAKE_SOURCE_DIR}/src/ui/song_time.cpp
     ${CMAKE_SOURCE_DIR}/src/sound/player_cache.cpp
+    ${CMAKE_SOURCE_DIR}/src/sound/playback_manager.cpp
     ${CMAKE_SOURCE_DIR}/src/sound/playback_engine.cpp
     ${CMAKE_SOURCE_DIR}/src/sound/playback/test_playback.cpp
 )

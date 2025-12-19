@@ -59,6 +59,9 @@ namespace starling
 
         void seek(size_t seek_seconds);
     private:
+        void lock_thread();
+        void unlock_thread();
+        void set_state(PlaybackState state);
 
         void playback_thread();
     private:
@@ -66,9 +69,10 @@ namespace starling
         MusicQueue* song_queue = nullptr;
         std::mutex state_mutex;
         std::condition_variable state_condition;
-        PlaybackState current_state = PlaybackState::Paused;
+        PlaybackState current_state = PlaybackState::Stopped;
 
         std::thread worker_thread;
+        std::condition_variable thread_condition;
         //
         // TODO: Is there a better way to handle this besides a mutex?
         //

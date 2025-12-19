@@ -1,13 +1,18 @@
 
 #include "playback_manager.h"
 
+static size_t trace_count = 0;
+#define DebugTrace() \
+    std::cout << "Trace at " << trace_count << " " << __FUNCTION__  << ":" << __LINE__ << std::endl;\
+    trace_count++;\
+
 namespace starling
 {
     PlaybackManager::PlaybackManager(PlaybackEngine* engine, MusicQueue* song_queue) :
         engine(engine),
         song_queue(song_queue)
     {
-        worker_thread_lock.lock();
+        lock_thread();
         worker_thread = std::thread(&PlaybackManager::playback_thread, this);
     }
 
@@ -16,7 +21,7 @@ namespace starling
         running = false;
         engine->stop();
         current_state = PlaybackState::Stopped;
-        worker_thread_lock.unlock();
+        unlock_thread();
         worker_thread.join();
     }
 
@@ -39,9 +44,11 @@ namespace starling
         {
             return;
         }
-        std::lock_guard<std::mutex> guard(state_mutex);
-        current_state = PlaybackState::Playing;
-        worker_thread_lock.unlock();
+        DebugTrace()
+        set_state(PlaybackState::Playing);
+        DebugTrace()
+        std::cout << "Current state in play - " << state() << std::endl;
+        unlock_thread();
     }
 
     void PlaybackManager::play(const SoundFile* queue_item)
@@ -61,25 +68,15 @@ namespace starling
         while(running)
         {
             //
-            // The controlling thread will wait for the playback thread to turnaround to this point when changing the state. The playback thread
-            // will continually play the current song until it reaches the end of the sound data. Changing the state from Playing to Stopped or Paused
-            // will break out of that playing loop and eventually reach this point. We notify all when we reach this point so they can continue under
-            // the assumption that we are officially stopped.
-            //
-            // This allows for actions like previous_song, or next_song where we want to enter a stopped state, change the iterator postion, then play
-            // again.
-            //
-            state_condition.notify_all();
-            std::lock_guard<std::mutex> play_guard(worker_thread_lock);
-
-            //
             // I had this down to a 2μs turnaround time in the original version where it ran in main. I imagine this is because there were
             // no function calls involved. Now we're sitting at a 10μs turnaround assuming we don't need to re-create the sound_player.
             //
             auto end_turnaround_time = std::chrono::high_resolution_clock::now();
             auto start_turnaround_time = std::chrono::high_resolution_clock::now();
-            while (state() == PlaybackState::Playing && song_queue->current_song() != nullptr)
+            std::cout << "Current song - " << song_queue->current_song() << std::endl;
+            if (state() == PlaybackState::Playing && song_queue->current_song() != nullptr)
             {
+                DebugTrace()
                 //
                 // This is the hot path. We don't want anything too expensive running in this thread or in this loop.
                 // One of the main goals of this project is low latency between songs. There should be no perceptible
@@ -102,13 +99,11 @@ namespace starling
                 // parameters so reusing the SoundPlayer between songs.
                 //
                 SoundFile* song = song_queue->current_song();
-                //sound_player = player_cache->get_player(song);
 
                 end_turnaround_time = std::chrono::high_resolution_clock::now();
-                auto turnaround_time_duration = duration_cast<std::chrono::microseconds>(end_turnaround_time - start_turnaround_time);
+                auto turnaround_time_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_turnaround_time - start_turnaround_time);
                 std::cout << "turnaround in " << turnaround_time_duration.count() << " microseconds." << std::endl;
 
-                //play_song(song);
                 engine->play_song(song);
                 start_turnaround_time = std::chrono::high_resolution_clock::now();
 
@@ -119,21 +114,45 @@ namespace starling
 
                 if (state() == PlaybackState::Playing)
                 {
+                    std::cout << "Next song." << std::endl;
                     song_queue->next();
                 }
+            }
+            else
+            {
+                //
+                // The controlling thread will wait for the playback thread to turnaround to this point when changing the state. The playback thread
+                // will continually play the current song until it reaches the end of the sound data. Changing the state from Playing to Stopped or Paused
+                // will break out of that playing loop and eventually reach this point. We notify all when we reach this point so they can continue under
+                // the assumption that we are officially stopped.
+                //
+                // This allows for actions like previous_song, or next_song where we want to enter a stopped state, change the iterator postion, then play
+                // again.
+                //
+                DebugTrace()
+                std::unique_lock<std::mutex> play_guard(worker_thread_lock);
+                DebugTrace()
+                if (state() == PlaybackState::Playing)
+                {
+                    set_state(PlaybackState::Stopped);
+                }
+
+                DebugTrace()
+                state_condition.notify_all();
+                DebugTrace()
+                thread_condition.wait(play_guard);
+                DebugTrace()
             }
         }
     }
 
     void PlaybackManager::stop()
     {
-        std::unique_lock<std::mutex> state_lock(state_mutex);
+        std::unique_lock<std::mutex> lk(worker_thread_lock);
+        set_state(PlaybackState::Stopped);
         engine->stop();
-        current_state = PlaybackState::Stopped;
-        // I don't care about the result of try_lock.
-        #pragma GCC diagnostic ignored "-Wunused-variable"
-        bool _ = worker_thread_lock.try_lock();
-        state_condition.wait(state_lock);
+        lock_thread();
+        state_condition.wait(lk);
     }
 
     void PlaybackManager::previous_song()
@@ -165,17 +184,24 @@ namespace starling
 
     void PlaybackManager::pause()
     {
-        std::unique_lock<std::mutex> state_lock(state_mutex);
+        std::unique_lock<std::mutex> lk(worker_thread_lock);
+        set_state(PlaybackState::Paused);
         engine->stop();
-        current_state = PlaybackState::Paused;
-        bool _ = worker_thread_lock.try_lock();
-        state_condition.wait(state_lock);
+        lock_thread();
+        state_condition.wait(lk);
     }
 
     PlaybackState PlaybackManager::state()
     {
         std::lock_guard<std::mutex> state_lock(state_mutex);
         return current_state;
+    }
+
+    void PlaybackManager::set_state(PlaybackState state)
+    {
+        std::lock_guard<std::mutex> state_lock(state_mutex);
+        std::cout << "setting state - " << state << std::endl;
+        current_state = state;
     }
 
     const SoundFile* PlaybackManager::currently_playing_song()
@@ -187,5 +213,32 @@ namespace starling
     {
         auto current_song_ptr = song_queue->current_song();
         current_song_ptr->seek_song(seek_seconds);
+    }
+
+    void PlaybackManager::lock_thread()
+    {
+        /*
+        for (size_t i = 0; i < 5; i++)
+        {
+            if (worker_thread_lock.try_lock())
+            {
+                return;
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+
+        //throw std::exception();
+        */
+    }
+
+    void PlaybackManager::unlock_thread()
+    {
+        DebugTrace()
+        std::lock_guard lk(worker_thread_lock);
+        std::cout << "Current state - " << state() << std::endl;
+        thread_condition.notify_all();
+        DebugTrace()
+        //worker_thread_lock.unlock();
     }
 }

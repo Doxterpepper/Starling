@@ -60,6 +60,12 @@ public:
 
     void reset() override
     {
+        reset_call_count++;
+    }
+
+    size_t reset_called()
+    {
+        return reset_call_count;
     }
 
     void set_frequency(size_t new_freq)
@@ -98,4 +104,5 @@ private:
     size_t bpb = 0;
     size_t mock_sound_length = 1;
     std::function<void()> read_callback = []() {};
+    size_t reset_call_count = 0;
 };
