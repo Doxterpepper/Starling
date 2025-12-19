@@ -8,33 +8,34 @@
 
 #include "sound_file.h"
 #include "playback.h"
+#include "music_queue.h"
+
+#include "playback_state.h"
+#include "player_cache.h"
+#include "music_queue.h"
+#include "playback_engine.h"
 
 namespace starling
 {
-    enum PlaybackState
-    {
-        Playing,
-        Paused,
-        Stopped
-    };
-
     /*
     * Handle playback state. Playback happens in a different thread owned by the PlaybackManager.
     * playback manager maintains this thread and the states of this thread. The thread will block
     * until there is something to play.
+    *
+    * Currently refactoring into only control. Shouldn't be responsible for maintaining the queue or playing music.
     */
     class PlaybackManager
     {
     public:
-        PlaybackManager();
+        PlaybackManager(PlaybackEngine* engine, MusicQueue* song_queue);
 
         ~PlaybackManager();
 
         PlaybackManager(const PlaybackManager&) = delete;
-        PlaybackManager(PlaybackManager&& other);
+        PlaybackManager(PlaybackManager&& other) = default;
 
         PlaybackManager& operator=(const PlaybackManager&) = delete;
-        PlaybackManager& operator=(PlaybackManager&&);
+        PlaybackManager& operator=(PlaybackManager&&) = default;
 
         const SoundFile* queue(std::unique_ptr< SoundFile > file);
 
@@ -58,28 +59,24 @@ namespace starling
 
         void seek(size_t seek_seconds);
     private:
-        void setup_sound_player(const SoundFile* song);
-        void play_song(SoundFile* song);
+        void lock_thread();
+        void unlock_thread();
+        void set_state(PlaybackState state);
 
         void playback_thread();
     private:
-        std::list< std::unique_ptr< SoundFile > > file_queue;
+        PlaybackEngine* engine = nullptr;
+        MusicQueue* song_queue = nullptr;
         std::mutex state_mutex;
-        std::mutex current_song_mutex;
         std::condition_variable state_condition;
-        PlaybackState current_state = PlaybackState::Paused;
-        std::unique_ptr< SoundPlayer > sound_player = nullptr;
-        QueuedSong current_song;
+        PlaybackState current_state = PlaybackState::Stopped;
 
         std::thread worker_thread;
+        std::condition_variable thread_condition;
         //
         // TODO: Is there a better way to handle this besides a mutex?
         //
         std::mutex worker_thread_lock;
         bool running = true;
-
-        size_t previous_song_frequency = 0;
-        size_t previous_song_channels = 0;
-        size_t previous_song_bits_per_sample = 0;
     };
 }

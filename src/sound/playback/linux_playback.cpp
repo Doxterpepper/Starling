@@ -1,5 +1,7 @@
 
-#include "playback.h"
+#ifdef __TEST_DEF__
+#elif __linux__
+#include <sound/playback.h>
 
 #include <iostream>
 
@@ -48,21 +50,9 @@ namespace starling
         }
     }
 
-    SoundPlayer::SoundPlayer(SoundPlayer&& other)
-    {
-        pulse_simple = other.pulse_simple;
-        other.pulse_simple = nullptr;
-        pulse_settings = other.pulse_settings;
-    }
+    SoundPlayer::SoundPlayer(SoundPlayer&& other) = default;
 
-    SoundPlayer& SoundPlayer::operator=(SoundPlayer&& other)
-    {
-        pulse_simple = other.pulse_simple;
-        other.pulse_simple = nullptr;
-        pulse_settings = other.pulse_settings;
-        return *this;
-    }
-
+    SoundPlayer& SoundPlayer::operator=(SoundPlayer&& other) = default;
     void SoundPlayer::flush()
     {
         int error = 0;
@@ -73,3 +63,4 @@ namespace starling
         }
     }
 }
+#endif

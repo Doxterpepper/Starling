@@ -23,11 +23,17 @@ find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
 
 add_executable(${PROJECT_NAME}
     main.cpp
-    sound/playback.cpp
+    sound/playback/linux_playback.cpp
     sound/playback_manager.cpp
+    sound/player_cache.cpp
+    sound/playback_engine.cpp
     file_entry.cpp
     ui/player_controls.cpp
     ui/song_time.cpp
+)
+
+target_include_directories(${PROJECT_NAME}
+  PRIVATE ${CMAKE_SOURCE_DIR}/src
 )
 
 
