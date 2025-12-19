@@ -12,6 +12,7 @@
 
 #include "playback_state.h"
 #include "player_cache.h"
+#include "music_queue.h"
 
 namespace starling
 {
@@ -23,16 +24,15 @@ namespace starling
     class PlaybackManager
     {
     public:
-        PlaybackManager();
-        PlaybackManager(PlayerCache* cache);
+        PlaybackManager(PlayerCache* cache, MusicQueue* song_queue);
 
         ~PlaybackManager();
 
         PlaybackManager(const PlaybackManager&) = delete;
-        PlaybackManager(PlaybackManager&& other);
+        PlaybackManager(PlaybackManager&& other) = default;
 
         PlaybackManager& operator=(const PlaybackManager&) = delete;
-        PlaybackManager& operator=(PlaybackManager&&);
+        PlaybackManager& operator=(PlaybackManager&&) = default;
 
         const SoundFile* queue(std::unique_ptr< SoundFile > file);
 
@@ -60,14 +60,14 @@ namespace starling
 
         void playback_thread();
     private:
-        PlayerCache* player_cache;
+        PlayerCache* player_cache = nullptr;
+        MusicQueue* song_queue = nullptr;
         std::list< std::unique_ptr< SoundFile > > file_queue;
         std::mutex state_mutex;
         std::mutex current_song_mutex;
         std::condition_variable state_condition;
         PlaybackState current_state = PlaybackState::Paused;
         SoundPlayer* sound_player = nullptr;
-        QueuedSong current_song;
 
         std::thread worker_thread;
         //

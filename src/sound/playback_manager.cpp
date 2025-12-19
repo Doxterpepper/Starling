@@ -3,13 +3,9 @@
 
 namespace starling
 {
-    PlaybackManager::PlaybackManager() :
-        PlaybackManager(nullptr)
-    {
-    }
-
-    PlaybackManager::PlaybackManager(PlayerCache* cache) :
-        player_cache(cache)
+    PlaybackManager::PlaybackManager(PlayerCache* cache, MusicQueue* song_queue) :
+        player_cache(cache),
+        song_queue(song_queue)
     {
         worker_thread_lock.lock();
         worker_thread = std::thread(&PlaybackManager::playback_thread, this);
@@ -23,40 +19,22 @@ namespace starling
         worker_thread.join();
     }
 
-    PlaybackManager::PlaybackManager(PlaybackManager&& other)
-    {
-        file_queue = std::move(other.file_queue);
-        current_state = other.current_state;
-        other.current_state = PlaybackState::Paused;
-    }
-
-    PlaybackManager& PlaybackManager::operator=(PlaybackManager&& other)
-    {
-        file_queue = std::move(other.file_queue);
-        current_state = other.current_state;
-        other.current_state = PlaybackState::Paused;
-        return *this;
-    }
-
     const SoundFile* PlaybackManager::queue(std::unique_ptr< SoundFile > file)
     {
-        const SoundFile* file_ptr = file.get();
-        file_queue.push_back(std::move(file));
-        current_song = file_queue.begin();
+        SoundFile* file_ptr = file.get();
+        song_queue->add_song(std::move(file));
         return file_ptr;
     }
 
     const SoundFile* PlaybackManager::queue(const std::filesystem::path& file_path)
     {
         std::unique_ptr<SoundFile> sound_file = open_sound_file(file_path);
-        const SoundFile* file_ptr = sound_file.get();
-        queue(std::move(sound_file));
-        return file_ptr;
+        return queue(std::move(sound_file));
     }
 
     void PlaybackManager::play()
     {
-        if (file_queue.size() == 0)
+        if (song_queue->size() == 0 || song_queue->current_song() == nullptr)
         {
             return;
         }
@@ -68,12 +46,10 @@ namespace starling
     void PlaybackManager::play(const SoundFile* queue_item)
     {
         current_state = PlaybackState::Stopped;
-        for (std::list<std::unique_ptr<SoundFile>>::iterator queued_song = file_queue.begin(); queued_song != file_queue.end(); ++queued_song)
+        
+        if(!song_queue->set_current_song(queue_item))
         {
-            if (queue_item == queued_song->get())
-            {
-                current_song = queued_song;
-            }
+            throw std::exception();
         }
 
         play();
@@ -126,7 +102,7 @@ namespace starling
             //
             auto end_turnaround_time = std::chrono::high_resolution_clock::now();
             auto start_turnaround_time = std::chrono::high_resolution_clock::now();
-            while (state() == PlaybackState::Playing && current_song != file_queue.end())
+            while (state() == PlaybackState::Playing && song_queue->current_song() != nullptr)
             {
                 //
                 // This is the hot path. We don't want anything too expensive running in this thread or in this loop.
@@ -149,9 +125,8 @@ namespace starling
                 // a turnaround time of 1μs. Likely optimizes the function calls. That is between songs with the same playback
                 // parameters so reusing the SoundPlayer between songs.
                 //
-                SoundFile* song = current_song->get();
+                SoundFile* song = song_queue->current_song();
                 sound_player = player_cache->get_player(song);
-                //setup_sound_player(song);
 
                 end_turnaround_time = std::chrono::high_resolution_clock::now();
                 auto turnaround_time_duration = duration_cast<std::chrono::microseconds>(end_turnaround_time - start_turnaround_time);
@@ -162,7 +137,7 @@ namespace starling
 
                 if (state() == PlaybackState::Playing)
                 {
-                    ++current_song;
+                    song_queue->next();
                 }
             }
         }
@@ -180,45 +155,29 @@ namespace starling
 
     void PlaybackManager::previous_song()
     {
-        if (file_queue.size() == 0)
+        if (song_queue->size() == 0)
         {
             return;
         }
 
         stop();
-        auto* current_song_ptr = current_song->get();
-        if (current_song_ptr->current_time() > 0 && current_song != file_queue.begin())
-        {
-            std::cout << "Going back a song." << std::endl;
-            {
-                std::lock_guard song_lock(current_song_mutex);
-                --current_song;
-            }
-        }
-        else
-        {
-            current_song_ptr->seek_song(0);
-        }
+        song_queue->previous();
         play();
     }
 
     void PlaybackManager::next_song()
     {
-        if (file_queue.size() == 0)
+        if (song_queue->size() == 0)
         {
             return;
         }
 
         stop();
-        auto* current_song_ptr = current_song->get();
-        if (current_song != file_queue.end())
-        {
-            {
-                std::lock_guard song_lock(current_song_mutex);
-                ++current_song;
-            }
-            play();
-        }
+        song_queue->next();
+        //
+        // If we go on past the end of the queue, we won't play anything.
+        //
+        play();
     }
 
     void PlaybackManager::pause()
@@ -237,18 +196,12 @@ namespace starling
 
     const SoundFile* PlaybackManager::currently_playing_song()
     {
-        //
-        // TODO: I don't like this whole design. It feels clunky and I'm seeing weird
-        // behavior when switching songs. This needs to be thought out more clearly.
-        //
-        std::lock_guard song_lock(current_song_mutex);
-        return current_song->get();
+        return song_queue->current_song();
     }
 
     void PlaybackManager::seek(size_t seek_seconds)
     {
-        std::lock_guard current_song_lock(current_song_mutex);
-        auto current_song_ptr = current_song->get();
+        auto current_song_ptr = song_queue->current_song();
         current_song_ptr->seek_song(seek_seconds);
     }
 }

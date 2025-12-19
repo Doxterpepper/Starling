@@ -27,6 +27,7 @@
 #include "sound/sound_file.h"
 #include "sound/playback_manager.h"
 #include "sound/player_cache.h"
+#include "sound/music_queue.h"
 
 #include "file_entry.h"
 #include "ui/player_controls.h"
@@ -103,7 +104,8 @@ int main(int argc, char** argv)
     // can be mocked for testing.
     //
     starling::PlayerCache cache;
-    starling::PlaybackManager player(&cache);
+    starling::MusicQueue queue;
+    starling::PlaybackManager player(&cache, &queue);
 
     QWidget* window = new QWidget();
     QVBoxLayout* windowLayout = new QVBoxLayout(window);
@@ -169,6 +171,7 @@ int main(int argc, char** argv)
     // Loading a file into memory takes around 20-50μs. This is fast, but without it it can take around 1-2μs to switch to the next song.
     // There is no guarantee it will always take this long. For one test file I saw load times on the order of 20ms.
     //
+    /*
     starling::PlaybackManager playback_manager;
     for (int song_index = 1; song_index < argc; song_index++)
     {
@@ -182,4 +185,5 @@ int main(int argc, char** argv)
     }
 
     playback_manager.play();
+    */
 }
