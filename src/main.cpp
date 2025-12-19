@@ -26,6 +26,7 @@
 #include "sound/playback.h"
 #include "sound/sound_file.h"
 #include "sound/playback_manager.h"
+#include "sound/player_cache.h"
 
 #include "file_entry.h"
 #include "ui/player_controls.h"
@@ -95,7 +96,14 @@ int main(int argc, char** argv)
     std::cout << std::endl;
 
     QApplication app(argc, argv);
-    starling::PlaybackManager player;
+
+    //
+    // Still thinking about putting all this in a facade that just passes calls through and has
+    // no real logic. It would just setup the playback manager for the application while the backend
+    // can be mocked for testing.
+    //
+    starling::PlayerCache cache;
+    starling::PlaybackManager player(&cache);
 
     QWidget* window = new QWidget();
     QVBoxLayout* windowLayout = new QVBoxLayout(window);

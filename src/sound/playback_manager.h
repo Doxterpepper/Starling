@@ -11,6 +11,7 @@
 #include "music_queue.h"
 
 #include "playback_state.h"
+#include "player_cache.h"
 
 namespace starling
 {
@@ -23,6 +24,7 @@ namespace starling
     {
     public:
         PlaybackManager();
+        PlaybackManager(PlayerCache* cache);
 
         ~PlaybackManager();
 
@@ -54,17 +56,17 @@ namespace starling
 
         void seek(size_t seek_seconds);
     private:
-        void setup_sound_player(const SoundFile* song);
         void play_song(SoundFile* song);
 
         void playback_thread();
     private:
+        PlayerCache* player_cache;
         std::list< std::unique_ptr< SoundFile > > file_queue;
         std::mutex state_mutex;
         std::mutex current_song_mutex;
         std::condition_variable state_condition;
         PlaybackState current_state = PlaybackState::Paused;
-        std::unique_ptr< SoundPlayer > sound_player = nullptr;
+        SoundPlayer* sound_player = nullptr;
         QueuedSong current_song;
 
         std::thread worker_thread;

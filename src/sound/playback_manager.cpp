@@ -3,7 +3,13 @@
 
 namespace starling
 {
-    PlaybackManager::PlaybackManager()
+    PlaybackManager::PlaybackManager() :
+        PlaybackManager(nullptr)
+    {
+    }
+
+    PlaybackManager::PlaybackManager(PlayerCache* cache) :
+        player_cache(cache)
     {
         worker_thread_lock.lock();
         worker_thread = std::thread(&PlaybackManager::playback_thread, this);
@@ -46,43 +52,6 @@ namespace starling
         const SoundFile* file_ptr = sound_file.get();
         queue(std::move(sound_file));
         return file_ptr;
-    }
-
-    void PlaybackManager::setup_sound_player(const SoundFile* song)
-    {
-        if (!song)
-        {
-            std::cerr << "Got null SoundFile while setting up sound player" << std::endl;
-            return;
-        }
-
-        if (!sound_player
-            || previous_song_bits_per_sample != song->bits_per_sample()
-            || previous_song_channels != song->channels()
-            || previous_song_frequency != song->frequency())
-        {
-            //
-            // I'd like a better method to do this, but for now we just track what each previous song settings were and
-            // recreate the SoundPlayer if it needs new settings. It's a little awkward, but it works.
-            //
-            // This is done for performance reasons. The goal is to make the transitions from one song to the next
-            // as seamless as possible. So only do this work when absolutely necessary. It takes on the order of 24ms to create
-            // a SoundPlayer. That's a noticeable gab in the sound.
-            //
-            auto create_playback_start = std::chrono::high_resolution_clock::now();
-            sound_player = std::make_unique<SoundPlayer>("starling", "music", song->channels(), song->frequency(), song->bits_per_sample());
-            auto create_playback_stop = std::chrono::high_resolution_clock::now();
-
-            //
-            // This is an expensive operation. Track the time spent doing this for awareness.
-            //
-            auto playback_create_duration = duration_cast<std::chrono::microseconds>(create_playback_stop - create_playback_start);
-            std::cout << "Create playback object in " << playback_create_duration.count() << " microseconds." << std::endl;
-
-            previous_song_bits_per_sample = song->bits_per_sample();
-            previous_song_channels = song->channels();
-            previous_song_frequency = song->frequency();
-        }
     }
 
     void PlaybackManager::play()
@@ -181,7 +150,8 @@ namespace starling
                 // parameters so reusing the SoundPlayer between songs.
                 //
                 SoundFile* song = current_song->get();
-                setup_sound_player(song);
+                sound_player = player_cache->get_player(song);
+                //setup_sound_player(song);
 
                 end_turnaround_time = std::chrono::high_resolution_clock::now();
                 auto turnaround_time_duration = duration_cast<std::chrono::microseconds>(end_turnaround_time - start_turnaround_time);
