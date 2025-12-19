@@ -7,8 +7,13 @@
 #include <vector>
 #include <iostream>
 
+#ifdef __TEST_DEF__
+#elif __linux__
 #include <pulse/simple.h>
 #include <pulse/error.h>
+#elif _WIN32
+#elif __APPLE__
+#endif
 
 namespace starling
 {
@@ -36,6 +41,11 @@ namespace starling
 
         template <typename buffer_type>
         void play_buffer(const std::vector< buffer_type >& data, size_t length)
+    #ifdef __TEST_DEF__
+        {
+            call_count++;
+        }
+    #elif __linux__
         {
             int error = 0;
             int result = pa_simple_write(pulse_simple, data.data(), length, &error);
@@ -45,11 +55,24 @@ namespace starling
                 std::cerr << "pa_simple_write_failed " << pa_strerror(error) << std::endl;
             }
         }
+    #elif _WIN32
+        #error "Windows not supported yet."
+    #elif __APPLE__
+        #error "Apple not support yet"
+    #endif
 
         void flush();
 
     private:
+    #ifdef __TEST_DEF__
+        int call_count = 0;
+    #elif __linux__
         pa_simple* pulse_simple = nullptr;
         pa_sample_spec pulse_settings{};
+    #elif _WIN32
+        #error "Windows not supported yet."
+    #elif __APPLE__
+        #error "Apple not support yet"
+    #endif
     };
 }

@@ -4,58 +4,7 @@
 #include <sound/music_queue.h>
 #include <sound/sound_file.h>
 
-class MockSoundFile : public starling::SoundFile
-{
-public:
-    MockSoundFile(const std::filesystem::path& file_path) : SoundFile(file_path) {}
-    size_t channels() const override
-    {
-        return 0;
-    }
-
-    size_t frequency() const override
-    {
-        return 0;
-    }
-
-    size_t bits_per_sample() const override
-    {
-        return 0;
-    }
-
-    size_t read_sound_chunk(uint8_t*, size_t) override
-    {
-        return 0;
-    }
-
-    size_t bytes_per_block() const override
-    {
-        return 0;
-    }
-
-    size_t sound_length() const override
-    {
-        return 0;
-    }
-
-    size_t current_time() const override
-    {
-        return 0;
-    }
-
-    std::string name() const override
-    {
-        return "test";
-    }
-
-    void seek_song(size_t) override
-    {
-    }
-
-    void reset() override
-    {
-    }
-};
+#include "../mock/mock_sound_file.h"
 
 TEST_CASE("No queued songs returns nullptr")
 {

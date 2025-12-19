@@ -10,15 +10,10 @@
 #include "playback.h"
 #include "music_queue.h"
 
+#include "playback_state.h"
+
 namespace starling
 {
-    enum PlaybackState
-    {
-        Playing,
-        Paused,
-        Stopped
-    };
-
     /*
     * Handle playback state. Playback happens in a different thread owned by the PlaybackManager.
     * playback manager maintains this thread and the states of this thread. The thread will block

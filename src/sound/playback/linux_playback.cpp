@@ -1,5 +1,6 @@
 
-#include "playback.h"
+#ifdef __linux__
+#include <sound/playback.h>
 
 #include <iostream>
 
@@ -61,3 +62,4 @@ namespace starling
         }
     }
 }
+#endif
