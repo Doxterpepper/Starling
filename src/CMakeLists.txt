@@ -26,6 +26,7 @@ add_executable(${PROJECT_NAME}
     sound/playback.cpp
     sound/playback_manager.cpp
     sound/player_cache.cpp
+    sound/playback_engine.cpp
     file_entry.cpp
     ui/player_controls.cpp
     ui/song_time.cpp

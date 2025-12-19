@@ -13,6 +13,7 @@
 #include "playback_state.h"
 #include "player_cache.h"
 #include "music_queue.h"
+#include "playback_engine.h"
 
 namespace starling
 {
@@ -20,6 +21,8 @@ namespace starling
     * Handle playback state. Playback happens in a different thread owned by the PlaybackManager.
     * playback manager maintains this thread and the states of this thread. The thread will block
     * until there is something to play.
+    *
+    * Currently refactoring into only control. Shouldn't be responsible for maintaining the queue or playing music.
     */
     class PlaybackManager
     {
@@ -62,9 +65,7 @@ namespace starling
     private:
         PlayerCache* player_cache = nullptr;
         MusicQueue* song_queue = nullptr;
-        std::list< std::unique_ptr< SoundFile > > file_queue;
         std::mutex state_mutex;
-        std::mutex current_song_mutex;
         std::condition_variable state_condition;
         PlaybackState current_state = PlaybackState::Paused;
         SoundPlayer* sound_player = nullptr;
@@ -75,9 +76,5 @@ namespace starling
         //
         std::mutex worker_thread_lock;
         bool running = true;
-
-        size_t previous_song_frequency = 0;
-        size_t previous_song_channels = 0;
-        size_t previous_song_bits_per_sample = 0;
     };
 }
