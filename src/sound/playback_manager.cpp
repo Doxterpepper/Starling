@@ -3,8 +3,8 @@
 
 namespace starling
 {
-    PlaybackManager::PlaybackManager(PlayerCache* cache, MusicQueue* song_queue) :
-        player_cache(cache),
+    PlaybackManager::PlaybackManager(PlaybackEngine* engine, MusicQueue* song_queue) :
+        engine(engine),
         song_queue(song_queue)
     {
         worker_thread_lock.lock();
@@ -14,6 +14,7 @@ namespace starling
     PlaybackManager::~PlaybackManager()
     {
         running = false;
+        engine->stop();
         current_state = PlaybackState::Stopped;
         worker_thread_lock.unlock();
         worker_thread.join();
@@ -53,31 +54,6 @@ namespace starling
         }
 
         play();
-    }
-
-    void PlaybackManager::play_song(SoundFile* song)
-    {
-        size_t read_bytes = 0;
-        //
-        // Use 128 so that we end up with a decent size buffer for both 16 bit and 24 bit audio that still
-        // fits the alignment for both.
-        //
-        std::vector<uint8_t> sound_buffer(song->bytes_per_block() * 128);
-        do
-        {
-            read_bytes = song->read_sound_chunk(sound_buffer.data(), sound_buffer.size());
-            if (read_bytes)
-            {
-                sound_player->play_buffer(sound_buffer, read_bytes);
-            }
-        } while(read_bytes && current_state == PlaybackState::Playing);
-
-        if (current_state != PlaybackState::Paused)
-        {
-            // Note: At the moment, the file is not closed until the file is deleted. May want to consider
-            // releasing the file at this step.
-            song->reset();
-        }
     }
 
     void PlaybackManager::playback_thread()
@@ -126,14 +102,20 @@ namespace starling
                 // parameters so reusing the SoundPlayer between songs.
                 //
                 SoundFile* song = song_queue->current_song();
-                sound_player = player_cache->get_player(song);
+                //sound_player = player_cache->get_player(song);
 
                 end_turnaround_time = std::chrono::high_resolution_clock::now();
                 auto turnaround_time_duration = duration_cast<std::chrono::microseconds>(end_turnaround_time - start_turnaround_time);
                 std::cout << "turnaround in " << turnaround_time_duration.count() << " microseconds." << std::endl;
 
-                play_song(song);
+                //play_song(song);
+                engine->play_song(song);
                 start_turnaround_time = std::chrono::high_resolution_clock::now();
+
+                if (state() != PlaybackState::Paused)
+                {
+                    song->reset();
+                }
 
                 if (state() == PlaybackState::Playing)
                 {
@@ -146,6 +128,7 @@ namespace starling
     void PlaybackManager::stop()
     {
         std::unique_lock<std::mutex> state_lock(state_mutex);
+        engine->stop();
         current_state = PlaybackState::Stopped;
         // I don't care about the result of try_lock.
         #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -183,6 +166,7 @@ namespace starling
     void PlaybackManager::pause()
     {
         std::unique_lock<std::mutex> state_lock(state_mutex);
+        engine->stop();
         current_state = PlaybackState::Paused;
         bool _ = worker_thread_lock.try_lock();
         state_condition.wait(state_lock);

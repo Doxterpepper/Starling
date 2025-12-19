@@ -27,7 +27,7 @@ namespace starling
     class PlaybackManager
     {
     public:
-        PlaybackManager(PlayerCache* cache, MusicQueue* song_queue);
+        PlaybackManager(PlaybackEngine* engine, MusicQueue* song_queue);
 
         ~PlaybackManager();
 
@@ -59,16 +59,14 @@ namespace starling
 
         void seek(size_t seek_seconds);
     private:
-        void play_song(SoundFile* song);
 
         void playback_thread();
     private:
-        PlayerCache* player_cache = nullptr;
+        PlaybackEngine* engine = nullptr;
         MusicQueue* song_queue = nullptr;
         std::mutex state_mutex;
         std::condition_variable state_condition;
         PlaybackState current_state = PlaybackState::Paused;
-        SoundPlayer* sound_player = nullptr;
 
         std::thread worker_thread;
         //

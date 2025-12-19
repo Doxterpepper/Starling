@@ -28,6 +28,7 @@
 #include "sound/playback_manager.h"
 #include "sound/player_cache.h"
 #include "sound/music_queue.h"
+#include <sound/playback_engine.h>
 
 #include "file_entry.h"
 #include "ui/player_controls.h"
@@ -105,7 +106,8 @@ int main(int argc, char** argv)
     //
     starling::PlayerCache cache;
     starling::MusicQueue queue;
-    starling::PlaybackManager player(&cache, &queue);
+    starling::PlaybackEngine engine(&cache);
+    starling::PlaybackManager player(&engine, &queue);
 
     QWidget* window = new QWidget();
     QVBoxLayout* windowLayout = new QVBoxLayout(window);
