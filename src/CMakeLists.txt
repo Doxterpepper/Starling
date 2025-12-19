@@ -17,7 +17,12 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 add_compile_options(-Wall -Werror)
-#set(CMAKE_CXX_CLANG_TIDY "clang-tidy")
+set(CMAKE_CXX_CLANG_TIDY "clang-tidy")
+add_custom_target(format
+    COMMAND clang-format
+    -i
+    ${ALL_SOURCE_FILES}
+)
 
 find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
 
