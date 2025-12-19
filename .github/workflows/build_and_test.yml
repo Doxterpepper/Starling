@@ -38,4 +38,4 @@ jobs:
         # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
         # There is a dependency on the the wav files and such. Need to be able to find them, so cd into the test directory then
         # run the results from build.
-        run: cd test && ./${{github.workspace}}/build/test/starling-tests
+        run: cd test && ${{github.workspace}}/build/test/starling-tests
