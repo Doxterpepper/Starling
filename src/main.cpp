@@ -45,8 +45,7 @@ bool isMusicFile(const std::filesystem::path &file) {
     return false;
 }
 
-std::list<std::filesystem::path>
-searchMusic(const std::filesystem::path &musicDir) {
+std::list<std::filesystem::path> searchMusic(const std::filesystem::path &musicDir) {
     //
     // This doesn't scale. It will need to be cached eventually if the user has
     // an absurd number of songs or searches their whole file system for songs.
@@ -56,18 +55,15 @@ searchMusic(const std::filesystem::path &musicDir) {
     auto start_search_music = std::chrono::high_resolution_clock::now();
     std::list<std::filesystem::path> songs;
 
-    for (const std::filesystem::directory_entry &entry :
-         std::filesystem::recursive_directory_iterator(musicDir)) {
+    for (const std::filesystem::directory_entry &entry : std::filesystem::recursive_directory_iterator(musicDir)) {
         if (entry.is_regular_file() && isMusicFile(entry)) {
             songs.push_back(entry);
         }
     }
 
     auto end_search_music = std::chrono::high_resolution_clock::now();
-    auto search_music_duration = duration_cast<std::chrono::microseconds>(
-        end_search_music - start_search_music);
-    std::cout << "Found " << songs.size() << " songs in "
-              << search_music_duration.count() << "μs" << std::endl;
+    auto search_music_duration = duration_cast<std::chrono::microseconds>(end_search_music - start_search_music);
+    std::cout << "Found " << songs.size() << " songs in " << search_music_duration.count() << "μs" << std::endl;
     return songs;
 }
 
@@ -122,13 +118,11 @@ int main(int argc, char **argv) {
 
     starling_ui::PlayerControls controls(player);
 
-    QObject::connect(&songListWidget, &QListWidget::itemDoubleClicked,
-                     [&](QListWidgetItem *song) {
-                         starling_ui::FileEntry *file_entry =
-                             static_cast<starling_ui::FileEntry *>(song);
-                         player.play(file_entry->playback_file());
-                         controls.set_playing();
-                     });
+    QObject::connect(&songListWidget, &QListWidget::itemDoubleClicked, [&](QListWidgetItem *song) {
+        starling_ui::FileEntry *file_entry = static_cast<starling_ui::FileEntry *>(song);
+        player.play(file_entry->playback_file());
+        controls.set_playing();
+    });
 
     windowLayout->addWidget(&songListWidget);
 
@@ -136,10 +130,8 @@ int main(int argc, char **argv) {
 
     auto show_window_time = std::chrono::high_resolution_clock::now();
     window->show();
-    auto app_startup_time = duration_cast<std::chrono::microseconds>(
-        show_window_time - start_app_time);
-    std::cout << "Application started in " << app_startup_time.count() << "μs."
-              << std::endl;
+    auto app_startup_time = duration_cast<std::chrono::microseconds>(show_window_time - start_app_time);
+    std::cout << "Application started in " << app_startup_time.count() << "μs." << std::endl;
 
     return app.exec();
 

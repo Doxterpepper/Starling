@@ -17,9 +17,7 @@
 namespace starling_ui {
 class PlayerControls : public QWidget {
   public:
-    PlayerControls(starling::PlaybackManager &playback_manager,
-                   QWidget *parent = nullptr,
-                   Qt::WindowFlags f = Qt::WindowFlags());
+    PlayerControls(starling::PlaybackManager &playback_manager, QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
     ~PlayerControls();
 
     void set_playing();

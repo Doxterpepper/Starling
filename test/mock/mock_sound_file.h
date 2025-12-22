@@ -5,8 +5,7 @@
 
 class MockSoundFile : public starling::SoundFile {
   public:
-    MockSoundFile(const std::filesystem::path &file_path)
-        : SoundFile(file_path) {}
+    MockSoundFile(const std::filesystem::path &file_path) : SoundFile(file_path) {}
     size_t channels() const override { return chan; }
 
     size_t frequency() const override { return freq; }
@@ -47,9 +46,7 @@ class MockSoundFile : public starling::SoundFile {
 
     void set_num_sound_chunks(size_t chunks) { mock_sound_length = chunks; }
 
-    void set_read_callback(std::function<void()> callback) {
-        read_callback = callback;
-    }
+    void set_read_callback(std::function<void()> callback) { read_callback = callback; }
 
   private:
     size_t freq = 0;

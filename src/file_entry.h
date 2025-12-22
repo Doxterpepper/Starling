@@ -8,8 +8,7 @@
 namespace starling_ui {
 class FileEntry : public QListWidgetItem {
   public:
-    FileEntry(const starling::SoundFile *sound_file,
-              QListWidget *parent = nullptr, int type = Type);
+    FileEntry(const starling::SoundFile *sound_file, QListWidget *parent = nullptr, int type = Type);
 
     const starling::SoundFile *playback_file() const;
 

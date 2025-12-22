@@ -12,9 +12,7 @@ class MockEngine : public PlaybackEngine {
     ~MockEngine() = default;
     void play_song(SoundFile *song) override { play_callback(song); }
 
-    void set_callback(std::function<void(SoundFile *)> &&callback) {
-        play_callback = std::move(callback);
-    }
+    void set_callback(std::function<void(SoundFile *)> &&callback) { play_callback = std::move(callback); }
 
   private:
     std::function<void(SoundFile *song)> play_callback = [](SoundFile *) {};

@@ -8,8 +8,7 @@
 
 #include <sound/playback.h>
 namespace starling {
-SoundPlayer::SoundPlayer(const std::string &, const std::string &, size_t,
-                         size_t, size_t) {}
+SoundPlayer::SoundPlayer(const std::string &, const std::string &, size_t, size_t, size_t) {}
 
 SoundPlayer::~SoundPlayer() {}
 
