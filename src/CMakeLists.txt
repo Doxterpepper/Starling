@@ -16,15 +16,15 @@ endif()
 # we only lint the main project.
 set(CMAKE_CXX_CLANG_TIDY "clang-tidy")
 
-set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -Werror")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 
 #if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_compile_definitions(__DEBUG__)
 #endif()
-
-add_compile_options(-Wall -Werror)
 
 find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
 
