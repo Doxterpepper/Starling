@@ -7,15 +7,16 @@ function source_dir() {
 
 PROJECT_DIR=$(source_dir)
 TEST_DIR="$PROJECT_DIR/test"
+THREADS=10
 
 function unit_tests() {
     pushd $TEST_DIR
-    make -j4 && ./starling-tests
+    time make -j $THREADS && time ./starling-tests
     popd
 }
 
 function build_project() {
-    cmake . -DCMAKE_BUILD_TYPE=Debug && make -j 10
+    cmake $1 -DCMAKE_BUILD_TYPE=Debug && time make -j $THREADS
 }
 
 function format_cmd() {
@@ -24,13 +25,13 @@ function format_cmd() {
     if [ $? -eq 0 ]
     then
         echo "Formatting with fd"
-        fd --full-path ${PROJECT_DIR} -j10 -e h -e cpp -x clang-format --verbose -i
+        fd --full-path ${PROJECT_DIR} -j$THREADS -e h -e cpp -x clang-format --verbose -i
     else
         find $PROJECT_DIR -regex '.*\.\(h\|cpp\)$' -exec clang-format --verbose -i -- {} \;
     fi
 }
 
-alias build="pushd $PROJECT_DIR; build_project; popd"
+alias build="pushd $PROJECT_DIR; build_project .; popd"
 alias test="unit_tests"
 alias memtests="build && valgrind --leak-check=full --error-exitcode=-1 $PROJECT_DIR/src/starling -cli $PROJECT_DIR/test/sound_file_tests/*.wav"
 alias format="format_cmd"
