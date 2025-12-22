@@ -6,10 +6,9 @@
 
 #include "mock/mock_sound_file.h"
 
-TEST_CASE("Get cache entry gives value.")
-{
+TEST_CASE("Get cache entry gives value.") {
     starling::PlayerCache cache;
-    
+
     std::filesystem::path sample_path("not a path");
     MockSoundFile testSoundFile(sample_path);
 
@@ -17,11 +16,10 @@ TEST_CASE("Get cache entry gives value.")
     CHECK(player != nullptr);
 }
 
-TEST_CASE("Calling same settings return same player")
-{
+TEST_CASE("Calling same settings return same player") {
 
     starling::PlayerCache cache;
-    
+
     std::filesystem::path sample_path("not a path");
     MockSoundFile testSoundFile(sample_path);
     testSoundFile.set_bps(264600);
@@ -40,11 +38,10 @@ TEST_CASE("Calling same settings return same player")
     CHECK(player1 == player2);
 }
 
-TEST_CASE("Calling with different channel gives new player.")
-{
+TEST_CASE("Calling with different channel gives new player.") {
 
     starling::PlayerCache cache;
-    
+
     std::filesystem::path sample_path("not a path");
     MockSoundFile testSoundFile(sample_path);
     testSoundFile.set_bps(264600);
@@ -64,11 +61,10 @@ TEST_CASE("Calling with different channel gives new player.")
     CHECK(player1 != player2);
 }
 
-TEST_CASE("Calling with different frequency gives new player.")
-{
+TEST_CASE("Calling with different frequency gives new player.") {
 
     starling::PlayerCache cache;
-    
+
     std::filesystem::path sample_path("not a path");
     MockSoundFile testSoundFile(sample_path);
     testSoundFile.set_bps(264600);
@@ -88,11 +84,10 @@ TEST_CASE("Calling with different frequency gives new player.")
     CHECK(player1 != player2);
 }
 
-TEST_CASE("Calling with different bits p/s gives new player.")
-{
+TEST_CASE("Calling with different bits p/s gives new player.") {
 
     starling::PlayerCache cache;
-    
+
     std::filesystem::path sample_path("not a path");
     MockSoundFile testSoundFile(sample_path);
     testSoundFile.set_bps(264600);

@@ -3,7 +3,5 @@
 #include <sound/playback.h>
 
 namespace starling::test {
-    class MockPlayer
-    {
-    };
-}
+class MockPlayer {};
+} // namespace starling::test
