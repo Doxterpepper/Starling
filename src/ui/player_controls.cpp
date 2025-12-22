@@ -77,7 +77,9 @@ void PlayerControls::set_playing() {
     play_pause_button->setText("play");
     bool mutex_available = timer_lock.try_lock();
     if (mutex_available) {
-      mutex_available = timer_lock.try_lock();
+      //
+      // TODO: Maybe a condition variable in the future?
+      mutex_available = timer_lock.try_lock(); // NOLINT
     }
   }
 }

@@ -21,6 +21,11 @@ namespace starling {
  */
 inline long file_search(FILE *binary_file,
                         const std::vector<uint8_t> &pattern) {
+  if (binary_file == nullptr) {
+    std::cerr << "Got null binary_file " << __FUNCTION__ << ":" << __LINE__
+              << std::endl;
+    return 0;
+  }
   std::vector<uint8_t> search_buffer(255);
   size_t pattern_index = 0;
   size_t read_bytes = 0;
@@ -97,7 +102,7 @@ public:
     file_path = other.file_path;
   }
 
-  ~SoundFile() {
+  virtual ~SoundFile() {
     if (sound_file) {
       fclose(sound_file);
       sound_file = nullptr;
@@ -155,7 +160,14 @@ public:
   WavFile2(const std::filesystem::path &file_path) : SoundFile(file_path) {
     load_header();
     load_data_tag();
-    file_bytes_in_1s = channels() * (bits_per_sample() / 8) * frequency();
+    //
+    // warning: Call to virtual method 'WavFile2::channels' during construction
+    // bypasses virtual dispatch [clang-analyzer-optin.cplusplus.VirtualCall] I
+    // think this is okay in this case. Want to keep this as a case by case
+    // basis.
+    //
+    file_bytes_in_1s =
+        channels() * (bits_per_sample() / 8) * frequency(); // NOLINT
   }
 
   std::string file_Type_bloc_id() const {
