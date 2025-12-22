@@ -221,7 +221,6 @@ void PlaybackManager::unlock_thread() {
     std::cout << "Current state - " << state() << std::endl;
     thread_condition.notify_all();
     DebugTrace(playback_locking)
-    // worker_thread_lock.unlock();
 }
 
 void PlaybackManager::wait_turnaround() {

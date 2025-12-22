@@ -77,6 +77,10 @@ int main(int argc, char **argv) {
 #else
     std::cout << "Release build." << std::endl;
 #endif
+    int *test = new int(10);
+    delete test;
+    delete test;
+    std::cout << std::endl;
     auto start_app_time = std::chrono::high_resolution_clock::now();
 
     //
