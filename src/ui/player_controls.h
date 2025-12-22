@@ -45,6 +45,8 @@ class PlayerControls : public QWidget {
 
     void wait_playing();
 
+    void unlock_playing();
+
   private:
     QGridLayout *layout;
     QPushButton *previous_song_button;
