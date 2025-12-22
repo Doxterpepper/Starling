@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup build dependencies
-        run: sudo apt update && sudo apt install -y clang qtbase5-dev catch2 libpulse-dev clang
+        run: sudo apt update && sudo apt install -y clang qtbase5-dev catch2 libpulse-dev clang-format
 
       - name: lint
         run: clang-format --version && find . -regex '.*\.\(h\|cpp\)$' -exec clang-format --dry-run -Werror -- {} \;
