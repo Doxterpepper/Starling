@@ -48,6 +48,8 @@ class PlaybackManager {
 
     void play(const SoundFile *queue_item);
 
+    void play_sync();
+
     void previous_song();
 
     void next_song();

@@ -45,6 +45,11 @@ void PlaybackManager::play(const SoundFile *queue_item) {
     play();
 }
 
+void PlaybackManager::play_sync() {
+    play();
+    wait_turnaround();
+}
+
 void PlaybackManager::playback_thread() {
     while (running) {
         //
