@@ -23,8 +23,8 @@ class Trace {
 #ifdef __DEBUG__
 static std::mutex trace_mutex;
 #define NEW_TRACE(name)                                                                                                                                                       \
-    static std::string name##_name = #name;                                                                                                                                   \
-    static int name##_count = 0;
+    [[maybe_unused]] static std::string name##_name = #name;                                                                                                                                   \
+    [[maybe_unused]] static int name##_count = 0;
 
 #define DebugTrace(name)                                                                                                                                                      \
     {                                                                                                                                                                         \
