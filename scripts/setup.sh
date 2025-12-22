@@ -18,7 +18,19 @@ function build_project() {
     cmake . -DCMAKE_BUILD_TYPE=Debug && make -j 10
 }
 
+function format_cmd() {
+    echo "Formatting the project with clang-format"
+    which fd > /dev/null
+    if [ $? -eq 0 ]
+    then
+        echo "Formatting with fd"
+        fd --full-path ${PROJECT_DIR} -j10 -e h -e cpp -x clang-format --verbose -i
+    else
+        find $PROJECT_DIR -regex '.*\.\(h\|cpp\)$' -exec clang-format --verbose -i -- {} \;
+    fi
+}
+
 alias build="pushd $PROJECT_DIR; build_project; popd"
 alias test="unit_tests"
 alias memtests="make -j4 && valgrind --leak-check=full $PROJECT_DIR/src/starling $PROJECT_DIR/test/sound_file_tests/sine-24le.wav"
-alias format="find $PROJECT_DIR -regex '.*\.\(h\|cpp\)$' -exec clang-format -i -- {} \;"
+alias format="format_cmd"
