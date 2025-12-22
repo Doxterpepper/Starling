@@ -23,17 +23,11 @@ SoundPlayer *PlayerCache::get_player(const SoundFile *soundfile) {
         // awareness.
         //
         auto create_playback_start = std::chrono::high_resolution_clock::now();
-        current_player = std::make_unique<SoundPlayer>(
-            "starling", "music", soundfile->channels(), soundfile->frequency(),
-            soundfile->bits_per_sample());
+        current_player = std::make_unique<SoundPlayer>("starling", "music", soundfile->channels(), soundfile->frequency(), soundfile->bits_per_sample());
         auto create_playback_stop = std::chrono::high_resolution_clock::now();
 
-        auto playback_create_duration =
-            std::chrono::duration_cast<std::chrono::microseconds>(
-                create_playback_stop - create_playback_start);
-        std::cout << "Create playback object in "
-                  << playback_create_duration.count() << " microseconds."
-                  << std::endl;
+        auto playback_create_duration = std::chrono::duration_cast<std::chrono::microseconds>(create_playback_stop - create_playback_start);
+        std::cout << "Create playback object in " << playback_create_duration.count() << " microseconds." << std::endl;
 
         current_player_settings = settings;
     }
@@ -41,8 +35,5 @@ SoundPlayer *PlayerCache::get_player(const SoundFile *soundfile) {
     return current_player.get();
 }
 
-int PlayerCache::sound_file_settings(const SoundFile *soundfile) {
-    return soundfile->bits_per_sample() + soundfile->channels() +
-           soundfile->frequency();
-}
+int PlayerCache::sound_file_settings(const SoundFile *soundfile) { return soundfile->bits_per_sample() + soundfile->channels() + soundfile->frequency(); }
 } // namespace starling

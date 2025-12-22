@@ -70,8 +70,7 @@ class MusicQueue {
     }
 
     bool set_current_song(SoundFile const *song) {
-        for (std::list<SoundFile *>::iterator songElement = ViewerList.begin();
-             songElement != ViewerList.end(); songElement++) {
+        for (std::list<SoundFile *>::iterator songElement = ViewerList.begin(); songElement != ViewerList.end(); songElement++) {
             if (*songElement == song) {
                 CurrentSong = songElement;
                 return true;

@@ -6,8 +6,7 @@
 NEW_TRACE(playback_locking)
 
 namespace starling {
-PlaybackManager::PlaybackManager(PlaybackEngine *engine, MusicQueue *song_queue)
-    : engine(engine), song_queue(song_queue) {
+PlaybackManager::PlaybackManager(PlaybackEngine *engine, MusicQueue *song_queue) : engine(engine), song_queue(song_queue) {
     lock_thread();
     worker_thread = std::thread(&PlaybackManager::playback_thread, this);
 }
@@ -26,8 +25,7 @@ const SoundFile *PlaybackManager::queue(std::unique_ptr<SoundFile> file) {
     return file_ptr;
 }
 
-const SoundFile *
-PlaybackManager::queue(const std::filesystem::path &file_path) {
+const SoundFile *PlaybackManager::queue(const std::filesystem::path &file_path) {
     std::unique_ptr<SoundFile> sound_file = open_sound_file(file_path);
     return queue(std::move(sound_file));
 }
@@ -37,8 +35,7 @@ void PlaybackManager::play() {
         return;
     }
     DebugTrace(playback_locking) set_state(PlaybackState::Playing);
-    DebugTrace(playback_locking) std::cout << "Current state in play - "
-                                           << state() << std::endl;
+    DebugTrace(playback_locking) std::cout << "Current state in play - " << state() << std::endl;
     unlock_thread();
 }
 
@@ -62,10 +59,8 @@ void PlaybackManager::playback_thread() {
         //
         auto end_turnaround_time = std::chrono::high_resolution_clock::now();
         auto start_turnaround_time = std::chrono::high_resolution_clock::now();
-        std::cout << "Current song - " << song_queue->current_song()
-                  << std::endl;
-        if (state() == PlaybackState::Playing &&
-            song_queue->current_song() != nullptr) {
+        std::cout << "Current song - " << song_queue->current_song() << std::endl;
+        if (state() == PlaybackState::Playing && song_queue->current_song() != nullptr) {
             DebugTrace(playback_locking)
                 //
                 // This is the hot path. We don't want anything too expensive
@@ -102,11 +97,8 @@ void PlaybackManager::playback_thread() {
                 SoundFile *song = song_queue->current_song();
 
             end_turnaround_time = std::chrono::high_resolution_clock::now();
-            auto turnaround_time_duration =
-                std::chrono::duration_cast<std::chrono::microseconds>(
-                    end_turnaround_time - start_turnaround_time);
-            std::cout << "turnaround in " << turnaround_time_duration.count()
-                      << " microseconds." << std::endl;
+            auto turnaround_time_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_turnaround_time - start_turnaround_time);
+            std::cout << "turnaround in " << turnaround_time_duration.count() << " microseconds." << std::endl;
 
             engine->play_song(song);
             start_turnaround_time = std::chrono::high_resolution_clock::now();
@@ -134,12 +126,8 @@ void PlaybackManager::playback_thread() {
             // want to enter a stopped state, change the iterator postion, then
             // play again.
             //
-            DebugTrace(playback_locking) std::unique_lock<std::mutex>
-                play_guard(worker_thread_lock);
-            DebugTrace(playback_locking) if (state() ==
-                                             PlaybackState::Playing) {
-                set_state(PlaybackState::Stopped);
-            }
+            DebugTrace(playback_locking) std::unique_lock<std::mutex> play_guard(worker_thread_lock);
+            DebugTrace(playback_locking) if (state() == PlaybackState::Playing) { set_state(PlaybackState::Stopped); }
 
             DebugTrace(playback_locking) state_condition.notify_all();
             DebugTrace(playback_locking) thread_condition.wait(play_guard);
@@ -198,9 +186,7 @@ void PlaybackManager::set_state(PlaybackState state) {
     current_state = state;
 }
 
-const SoundFile *PlaybackManager::currently_playing_song() {
-    return song_queue->current_song();
-}
+const SoundFile *PlaybackManager::currently_playing_song() { return song_queue->current_song(); }
 
 void PlaybackManager::seek(size_t seek_seconds) {
     auto current_song_ptr = song_queue->current_song();

@@ -36,9 +36,7 @@ namespace starling {
 // primary goal is to remove all delay between songs.
 class SoundPlayer {
   public:
-    SoundPlayer(const std::string &application_name,
-                const std::string &stream_name, size_t channels, size_t rate,
-                size_t bits_per_sample);
+    SoundPlayer(const std::string &application_name, const std::string &stream_name, size_t channels, size_t rate, size_t bits_per_sample);
     SoundPlayer(const SoundPlayer &) = delete;
     SoundPlayer(SoundPlayer &&);
     ~SoundPlayer();
@@ -58,8 +56,7 @@ class SoundPlayer {
         int result = pa_simple_write(pulse_simple, data.data(), length, &error);
 
         if (result < 0) {
-            std::cerr << "pa_simple_write_failed " << pa_strerror(error)
-                      << std::endl;
+            std::cerr << "pa_simple_write_failed " << pa_strerror(error) << std::endl;
         }
     }
 #endif

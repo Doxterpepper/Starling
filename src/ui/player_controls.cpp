@@ -8,9 +8,7 @@
 namespace starling_ui {
 using namespace std::chrono_literals;
 
-PlayerControls::PlayerControls(starling::PlaybackManager &playback_manager,
-                               QWidget *parent, Qt::WindowFlags f)
-    : QWidget(parent, f), playback_manager(playback_manager) {
+PlayerControls::PlayerControls(starling::PlaybackManager &playback_manager, QWidget *parent, Qt::WindowFlags f) : QWidget(parent, f), playback_manager(playback_manager) {
     timer = std::thread(&PlayerControls::update_time, this);
     layout = new QGridLayout(this);
     previous_song_button = new QPushButton("prev", this);
@@ -37,24 +35,18 @@ PlayerControls::~PlayerControls() {
 }
 
 void PlayerControls::register_signals() {
-    QObject::connect(play_pause_button, &QAbstractButton::clicked,
-                     [&]() { play_pause(); });
-    QObject::connect(previous_song_button, &QAbstractButton::clicked,
-                     [&]() { prev_song(); });
-    QObject::connect(next_song_button, &QAbstractButton::clicked,
-                     [&]() { next_song(); });
+    QObject::connect(play_pause_button, &QAbstractButton::clicked, [&]() { play_pause(); });
+    QObject::connect(previous_song_button, &QAbstractButton::clicked, [&]() { prev_song(); });
+    QObject::connect(next_song_button, &QAbstractButton::clicked, [&]() { next_song(); });
 
     // Emits on any change to the slider, including the time poll. Could be
     // useful later so I'm leaving the signature for reference.
     // QObject::connect(tracking, &QSlider::valueChanged, [](int value){
     // std::cout
     // << "Slider value to " << value << std::endl; });
-    QObject::connect(tracking, &QSlider::sliderMoved,
-                     [&](int value) { slider_move(value); });
-    QObject::connect(tracking, &QSlider::sliderReleased,
-                     [&]() { slider_release(); });
-    QObject::connect(tracking, &QSlider::sliderPressed,
-                     [&]() { slider_press(); });
+    QObject::connect(tracking, &QSlider::sliderMoved, [&](int value) { slider_move(value); });
+    QObject::connect(tracking, &QSlider::sliderReleased, [&]() { slider_release(); });
+    QObject::connect(tracking, &QSlider::sliderPressed, [&]() { slider_press(); });
 }
 
 void PlayerControls::play_pause() {
@@ -83,10 +75,7 @@ void PlayerControls::set_playing() {
     }
 }
 
-QString PlayerControls::current_time_string() const {
-
-    return QString::fromStdString(time_from_int(current_time));
-}
+QString PlayerControls::current_time_string() const { return QString::fromStdString(time_from_int(current_time)); }
 
 void PlayerControls::update_time() {
     while (running) {
@@ -96,8 +85,7 @@ void PlayerControls::update_time() {
         if (currently_playing_song == nullptr) {
             current_time = 0;
         } else {
-            current_time =
-                playback_manager.currently_playing_song()->current_time();
+            current_time = playback_manager.currently_playing_song()->current_time();
         }
 
         time->setText(current_time_string());

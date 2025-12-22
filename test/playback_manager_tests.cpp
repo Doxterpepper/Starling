@@ -93,8 +93,7 @@ TEST_CASE("stop causes the worker thread to block. song file reset.") {
     CHECK(sound_file_ptr->reset_called() == 1);
 }
 
-TEST_CASE(
-    "pause causes worker thread to block. play picks up where it left off.") {
+TEST_CASE("pause causes worker thread to block. play picks up where it left off.") {
     std::cout << "Pause test" << std::endl;
     std::mutex condition_mutex;
     std::condition_variable wait_variable;
