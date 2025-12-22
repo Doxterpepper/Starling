@@ -32,5 +32,5 @@ function format_cmd() {
 
 alias build="pushd $PROJECT_DIR; build_project; popd"
 alias test="unit_tests"
-alias memtests="make -j4 && valgrind --leak-check=full $PROJECT_DIR/src/starling $PROJECT_DIR/test/sound_file_tests/sine-24le.wav"
+alias memtests="build && valgrind --leak-check=full --error-exitcode=-1 $PROJECT_DIR/src/starling -cli $PROJECT_DIR/test/sound_file_tests/*.wav"
 alias format="format_cmd"

@@ -45,6 +45,38 @@ bool isMusicFile(const std::filesystem::path &file) {
     return false;
 }
 
+int start_gui(int argc, char **argv, starling::PlaybackManager &player, const std::list<const starling::SoundFile *> &file_list) {
+    QApplication app(argc, argv);
+
+    QWidget *window = new QWidget();
+    QVBoxLayout *windowLayout = new QVBoxLayout(window);
+    window->setFixedSize(400, 400);
+    window->setLayout(windowLayout);
+
+    QListWidget songListWidget;
+
+    for (auto &song_file : file_list) {
+        songListWidget.addItem(new starling_ui::FileEntry(song_file));
+    }
+
+    starling_ui::PlayerControls controls(player);
+
+    QObject::connect(&songListWidget, &QListWidget::itemDoubleClicked, [&](QListWidgetItem *song) {
+        starling_ui::FileEntry *file_entry = static_cast<starling_ui::FileEntry *>(song);
+        player.play(file_entry->playback_file());
+        controls.set_playing();
+    });
+
+    windowLayout->addWidget(&songListWidget);
+
+    windowLayout->addWidget(&controls);
+
+    // auto show_window_time = std::chrono::high_resolution_clock::now();
+    window->show();
+
+    return app.exec();
+}
+
 std::list<std::filesystem::path> searchMusic(const std::filesystem::path &musicDir) {
     //
     // This doesn't scale. It will need to be cached eventually if the user has
@@ -77,11 +109,21 @@ int main(int argc, char **argv) {
 #else
     std::cout << "Release build." << std::endl;
 #endif
-    int *test = new int(10);
-    delete test;
-    delete test;
     std::cout << std::endl;
-    auto start_app_time = std::chrono::high_resolution_clock::now();
+    // auto start_app_time = std::chrono::high_resolution_clock::now();
+
+    std::list<std::filesystem::path> file_list;
+    bool start_gui_app = true;
+    for (int i = 1; i < argc; i++) {
+        if (std::strcmp(argv[i], "-cli") == 0) {
+            start_gui_app = false;
+        } else {
+            file_list.push_back(std::filesystem::path(argv[i]));
+            std::cout << argv[i] << " ";
+        }
+    }
+
+    std::cout << std::endl;
 
     //
     // TODO: How can I speedup startup. It's a minor thing right now, but I'd
@@ -89,15 +131,6 @@ int main(int argc, char **argv) {
     // for large numbers of files. Right now I'm not worried, but I think it
     // won't scale for larger numbers of files.
     //
-    std::list<std::filesystem::path> file_list;
-    for (int arg_index = 1; arg_index < argc; arg_index++) {
-        file_list.push_back(std::filesystem::path(argv[arg_index]));
-        std::cout << argv[arg_index] << " ";
-    }
-    std::cout << std::endl;
-
-    QApplication app(argc, argv);
-
     //
     // Still thinking about putting all this in a facade that just passes calls
     // through and has no real logic. It would just setup the playback manager
@@ -108,89 +141,18 @@ int main(int argc, char **argv) {
     starling::PlaybackEngine engine(&cache);
     starling::PlaybackManager player(&engine, &queue);
 
-    QWidget *window = new QWidget();
-    QVBoxLayout *windowLayout = new QVBoxLayout(window);
-    window->setFixedSize(400, 400);
-    window->setLayout(windowLayout);
-
-    QListWidget songListWidget;
-
+    std::list<const starling::SoundFile *> songs;
     for (const std::filesystem::path &path : file_list) {
+
         auto song_file = player.queue(path);
-        songListWidget.addItem(new starling_ui::FileEntry(song_file));
+        songs.push_back(song_file);
     }
 
-    starling_ui::PlayerControls controls(player);
-
-    QObject::connect(&songListWidget, &QListWidget::itemDoubleClicked, [&](QListWidgetItem *song) {
-        starling_ui::FileEntry *file_entry = static_cast<starling_ui::FileEntry *>(song);
-        player.play(file_entry->playback_file());
-        controls.set_playing();
-    });
-
-    windowLayout->addWidget(&songListWidget);
-
-    windowLayout->addWidget(&controls);
-
-    auto show_window_time = std::chrono::high_resolution_clock::now();
-    window->show();
-    auto app_startup_time = duration_cast<std::chrono::microseconds>(show_window_time - start_app_time);
-    std::cout << "Application started in " << app_startup_time.count() << "μs." << std::endl;
-
-    return app.exec();
-
-    // Everything after the return is legacy. I'm keeping it so I don't forget
-    // what I was doing Originally I just had a CLI while testing reading wav
-    // files. It may be helpful to have this again. Maybe propper argument
-    // parsing would be helpful for testing.
-    if (argc < 2) {
-        std::cout << "Please specify an audio file." << std::endl;
-        return 0;
+    if (start_gui_app) {
+        // auto app_startup_time = duration_cast<std::chrono::microseconds>(show_window_time - start_app_time);
+        // std::cout << "Application started in " << app_startup_time.count() << "μs." << std::endl;
+        return start_gui(argc, argv, player, songs);
     }
 
-    std::vector<std::string> arguments(argc);
-
-    for (int arg_index = 0; arg_index < argc; arg_index++) {
-        arguments[arg_index] = std::string(argv[arg_index]);
-    }
-
-    //
-    // The two longest operations are loading the file and creating a
-    // SoundPlayer. The exact reason for each one taking so long is not
-    // determined yet. Intuitively creating the file object will take time
-    // because it depends on disk reads. The creation of the SoundPlayer
-    // requires setting up pulse audio. This very well could be an expensive
-    // operation.
-    //
-    // The theory now is that we load each file off the hot path and then only
-    // re-create the playback object if we need to. that is only if the settings
-    // change between files. Maybe there's a way to update the settings in our
-    // pulse setup without having to create the whole thing again.
-    //
-    // The best timing I have is for the creation of a SoundPlayer. This takes
-    // on the order of 24.8 ms on my machine. The bulk of the turnaround time
-    // was from this operation.
-    //
-    // Loading a file into memory takes around 20-50μs. This is fast, but
-    // without it it can take around 1-2μs to switch to the next song. There is
-    // no guarantee it will always take this long. For one test file I saw load
-    // times on the order of 20ms.
-    //
-    /*
-    starling::PlaybackManager playback_manager;
-    for (int song_index = 1; song_index < argc; song_index++)
-    {
-        auto file_path = std::filesystem::path(arguments[song_index]);
-        auto start_load_file = std::chrono::high_resolution_clock::now();
-        auto sound_file = starling::open_sound_file(file_path);
-        auto end_load_file = std::chrono::high_resolution_clock::now();
-        auto load_file_duration =
-    duration_cast<std::chrono::microseconds>(end_load_file - start_load_file);
-        std::cout << "Load file into memory in " << load_file_duration.count()
-    << " microseconds" << std::endl;
-    playback_manager.queue(std::move(sound_file));
-    }
-
-    playback_manager.play();
-    */
+    player.play_sync();
 }
