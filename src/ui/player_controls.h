@@ -1,7 +1,7 @@
 #pragma once
 
-#include <thread>
 #include <mutex>
+#include <thread>
 
 #include <QGridLayout>
 #include <QHBoxLayout>

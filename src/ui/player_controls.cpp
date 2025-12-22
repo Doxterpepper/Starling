@@ -119,17 +119,14 @@ void PlayerControls::slider_release() {
 
 void PlayerControls::seek_song(int seconds) { playback_manager.seek(seconds); }
 
-void PlayerControls::wait_playing()
-{
-    if (!running)
-    {
+void PlayerControls::wait_playing() {
+    if (!running) {
         // TODO: Works, but poorly thought out.
         return;
     }
     std::unique_lock time_callback(timer_lock);
 
-    if (playback_manager.state() != starling::PlaybackState::Playing)
-    {
+    if (playback_manager.state() != starling::PlaybackState::Playing) {
         timer_cv.wait(time_callback);
     }
 }

@@ -37,8 +37,8 @@ void PlaybackManager::play() {
         return;
     }
     DebugTrace(playback_locking) set_state(PlaybackState::Playing);
-    DebugTrace(playback_locking) std::cout << "Current state in play - " << state()
-                           << std::endl;
+    DebugTrace(playback_locking) std::cout << "Current state in play - "
+                                           << state() << std::endl;
     unlock_thread();
 }
 
@@ -134,9 +134,10 @@ void PlaybackManager::playback_thread() {
             // want to enter a stopped state, change the iterator postion, then
             // play again.
             //
-            DebugTrace(playback_locking) std::unique_lock<std::mutex> play_guard(
-                worker_thread_lock);
-            DebugTrace(playback_locking) if (state() == PlaybackState::Playing) {
+            DebugTrace(playback_locking) std::unique_lock<std::mutex>
+                play_guard(worker_thread_lock);
+            DebugTrace(playback_locking) if (state() ==
+                                             PlaybackState::Playing) {
                 set_state(PlaybackState::Stopped);
             }
 
