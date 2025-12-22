@@ -76,6 +76,11 @@ searchMusic(const std::filesystem::path &musicDir) {
 #define BUFSIZE 1024
 
 int main(int argc, char **argv) {
+#ifdef __DEBUG__
+    std::cout << "Debug build." << std::endl;
+#else
+    std::cout << "Release build." << std::endl;
+#endif
     auto start_app_time = std::chrono::high_resolution_clock::now();
 
     //

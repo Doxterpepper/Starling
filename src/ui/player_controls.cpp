@@ -3,13 +3,14 @@
 #include "song_time.h"
 #include <chrono>
 
+#include <common/trace.h>
+
 namespace starling_ui {
 using namespace std::chrono_literals;
 
 PlayerControls::PlayerControls(starling::PlaybackManager &playback_manager,
                                QWidget *parent, Qt::WindowFlags f)
     : QWidget(parent, f), playback_manager(playback_manager) {
-    timer_lock.lock();
     timer = std::thread(&PlayerControls::update_time, this);
     layout = new QGridLayout(this);
     previous_song_button = new QPushButton("prev", this);
@@ -28,8 +29,10 @@ PlayerControls::PlayerControls(starling::PlaybackManager &playback_manager,
 }
 
 PlayerControls::~PlayerControls() {
+    playback_manager.stop();
     running = false;
-    timer_lock.unlock();
+    std::unique_lock time_callback(timer_lock);
+    timer_cv.notify_all();
     timer.join();
 }
 
@@ -73,15 +76,10 @@ void PlayerControls::set_playing() {
         auto current_song = playback_manager.currently_playing_song();
         tracking->setRange(0, current_song->sound_length());
         play_pause_button->setText("pause");
-        timer_lock.unlock();
+        std::unique_lock time_callback(timer_lock);
+        timer_cv.notify_all();
     } else {
         play_pause_button->setText("play");
-        bool mutex_available = timer_lock.try_lock();
-        if (mutex_available) {
-            //
-            // TODO: Maybe a condition variable in the future?
-            mutex_available = timer_lock.try_lock(); // NOLINT
-        }
     }
 }
 
@@ -93,10 +91,7 @@ QString PlayerControls::current_time_string() const {
 void PlayerControls::update_time() {
     while (running) {
         std::this_thread::sleep_for(1s);
-        {
-            std::lock_guard time_callback(timer_lock);
-        }
-
+        wait_playing();
         auto currently_playing_song = playback_manager.currently_playing_song();
         if (currently_playing_song == nullptr) {
             current_time = 0;
@@ -123,4 +118,16 @@ void PlayerControls::slider_release() {
 }
 
 void PlayerControls::seek_song(int seconds) { playback_manager.seek(seconds); }
+
+void PlayerControls::wait_playing() {
+    if (!running) {
+        // TODO: Works, but poorly thought out.
+        return;
+    }
+    std::unique_lock time_callback(timer_lock);
+
+    if (playback_manager.state() != starling::PlaybackState::Playing) {
+        timer_cv.wait(time_callback);
+    }
+}
 } // namespace starling_ui

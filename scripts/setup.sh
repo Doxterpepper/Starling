@@ -15,7 +15,7 @@ function unit_tests() {
 }
 
 function build_project() {
-    cmake . && make -j 4
+    cmake . -DCMAKE_BUILD_TYPE=Debug && make -j 4
 }
 
 alias build="pushd $PROJECT_DIR; build_project; popd"

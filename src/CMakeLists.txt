@@ -9,7 +9,7 @@ set(CMAKE_AUTORCC_ON)
 set(CMAKE_CXX_STANDARD 20)
 
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
+  set(CMAKE_BUILD_TYPE Debug)
 endif()
 
 # TODO: Add this to top level so we can lint tests too. Tests aren't in good shape so
@@ -19,6 +19,10 @@ set(CMAKE_CXX_CLANG_TIDY "clang-tidy")
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
+#if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  add_compile_definitions(__DEBUG__)
+#endif()
 
 add_compile_options(-Wall -Werror)
 
