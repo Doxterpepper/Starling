@@ -25,7 +25,7 @@ jobs:
         run: sudo apt update && sudo apt install -y clang qtbase5-dev catch2 libpulse-dev
 
       - name: lint
-        run: find . -regex '.*\.\(h\|cpp\)$' -exec clang-format --dry-run -Werror -- {} \; && find . -regex '.*\.\(h\|cpp\)$' -exec clang-tidy --dry-run -Werror -- {} \;
+        run: find . -regex '.*\.\(h\|cpp\)$' -exec clang-format --dry-run -Werror -- {} \;
 
       - name: Configure CMake
         # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.

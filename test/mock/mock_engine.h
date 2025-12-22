@@ -6,17 +6,17 @@
 
 namespace starling::tests {
 class MockEngine : public PlaybackEngine {
-public:
-  MockEngine() : PlaybackEngine(nullptr) {};
+  public:
+    MockEngine() : PlaybackEngine(nullptr) {};
 
-  ~MockEngine() = default;
-  void play_song(SoundFile *song) override { play_callback(song); }
+    ~MockEngine() = default;
+    void play_song(SoundFile *song) override { play_callback(song); }
 
-  void set_callback(std::function<void(SoundFile *)> &&callback) {
-    play_callback = std::move(callback);
-  }
+    void set_callback(std::function<void(SoundFile *)> &&callback) {
+        play_callback = std::move(callback);
+    }
 
-private:
-  std::function<void(SoundFile *song)> play_callback = [](SoundFile *) {};
+  private:
+    std::function<void(SoundFile *song)> play_callback = [](SoundFile *) {};
 };
 } // namespace starling::tests

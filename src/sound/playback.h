@@ -35,46 +35,47 @@ namespace starling {
 // In the case of skipping or tracking, a little delay should be okay. But the
 // primary goal is to remove all delay between songs.
 class SoundPlayer {
-public:
-  SoundPlayer(const std::string &application_name,
-              const std::string &stream_name, size_t channels, size_t rate,
-              size_t bits_per_sample);
-  SoundPlayer(const SoundPlayer &) = delete;
-  SoundPlayer(SoundPlayer &&);
-  ~SoundPlayer();
+  public:
+    SoundPlayer(const std::string &application_name,
+                const std::string &stream_name, size_t channels, size_t rate,
+                size_t bits_per_sample);
+    SoundPlayer(const SoundPlayer &) = delete;
+    SoundPlayer(SoundPlayer &&);
+    ~SoundPlayer();
 
-  SoundPlayer &operator=(const SoundPlayer &) = delete;
-  SoundPlayer &operator=(SoundPlayer &&);
+    SoundPlayer &operator=(const SoundPlayer &) = delete;
+    SoundPlayer &operator=(SoundPlayer &&);
 
-  template <typename buffer_type>
-  void play_buffer(const std::vector<buffer_type> &data, size_t length)
+    template <typename buffer_type>
+    void play_buffer(const std::vector<buffer_type> &data, size_t length)
 #ifdef __TEST_DEF__
-  {
-    call_count++;
-  }
-#elif __linux__
-  {
-    int error = 0;
-    int result = pa_simple_write(pulse_simple, data.data(), length, &error);
-
-    if (result < 0) {
-      std::cerr << "pa_simple_write_failed " << pa_strerror(error) << std::endl;
+    {
+        call_count++;
     }
-  }
-#endif
-
-#ifdef __TEST_DEF__
-  int called() const;
-#endif
-
-  void flush();
-
-private:
-#ifdef __TEST_DEF__
-  int call_count = 0;
 #elif __linux__
-  pa_simple *pulse_simple = nullptr;
-  pa_sample_spec pulse_settings{};
+    {
+        int error = 0;
+        int result = pa_simple_write(pulse_simple, data.data(), length, &error);
+
+        if (result < 0) {
+            std::cerr << "pa_simple_write_failed " << pa_strerror(error)
+                      << std::endl;
+        }
+    }
+#endif
+
+#ifdef __TEST_DEF__
+    int called() const;
+#endif
+
+    void flush();
+
+  private:
+#ifdef __TEST_DEF__
+    int call_count = 0;
+#elif __linux__
+    pa_simple *pulse_simple = nullptr;
+    pa_sample_spec pulse_settings{};
 #endif
 };
 } // namespace starling
