@@ -4,7 +4,6 @@
 #include <chrono>
 
 #include <common/trace.h>
-
 namespace starling_ui {
 using namespace std::chrono_literals;
 
@@ -27,10 +26,9 @@ PlayerControls::PlayerControls(starling::PlaybackManager &playback_manager, QWid
 }
 
 PlayerControls::~PlayerControls() {
-    playback_manager.stop();
+
     running = false;
-    std::unique_lock time_callback(timer_lock);
-    timer_cv.notify_all();
+    unlock_playing();
     timer.join();
 }
 
@@ -68,8 +66,7 @@ void PlayerControls::set_playing() {
         auto current_song = playback_manager.currently_playing_song();
         tracking->setRange(0, current_song->sound_length());
         play_pause_button->setText("pause");
-        std::unique_lock time_callback(timer_lock);
-        timer_cv.notify_all();
+        unlock_playing();
     } else {
         play_pause_button->setText("play");
     }
@@ -79,8 +76,11 @@ QString PlayerControls::current_time_string() const { return QString::fromStdStr
 
 void PlayerControls::update_time() {
     while (running) {
+
         std::this_thread::sleep_for(1s);
+
         wait_playing();
+
         auto currently_playing_song = playback_manager.currently_playing_song();
         if (currently_playing_song == nullptr) {
             current_time = 0;
@@ -112,10 +112,17 @@ void PlayerControls::wait_playing() {
         // TODO: Works, but poorly thought out.
         return;
     }
+
     std::unique_lock time_callback(timer_lock);
 
     if (playback_manager.state() != starling::PlaybackState::Playing) {
+
         timer_cv.wait(time_callback);
     }
+}
+
+void PlayerControls::unlock_playing() {
+    std::lock_guard<std::mutex> time_callback_lock(timer_lock);
+    timer_cv.notify_all();
 }
 } // namespace starling_ui
