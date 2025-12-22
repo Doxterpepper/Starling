@@ -1,11 +1,9 @@
 
 #include "playback_manager.h"
 
-static size_t trace_count = 0;
-#define DebugTrace()                                                           \
-    std::cout << "Trace at " << trace_count << " " << __FUNCTION__ << ":"      \
-              << __LINE__ << std::endl;                                        \
-    trace_count++;
+#include <common/trace.h>
+
+NEW_TRACE(playback_locking)
 
 namespace starling {
 PlaybackManager::PlaybackManager(PlaybackEngine *engine, MusicQueue *song_queue)
@@ -38,8 +36,8 @@ void PlaybackManager::play() {
     if (song_queue->size() == 0 || song_queue->current_song() == nullptr) {
         return;
     }
-    DebugTrace() set_state(PlaybackState::Playing);
-    DebugTrace() std::cout << "Current state in play - " << state()
+    DebugTrace(playback_locking) set_state(PlaybackState::Playing);
+    DebugTrace(playback_locking) std::cout << "Current state in play - " << state()
                            << std::endl;
     unlock_thread();
 }
@@ -68,7 +66,7 @@ void PlaybackManager::playback_thread() {
                   << std::endl;
         if (state() == PlaybackState::Playing &&
             song_queue->current_song() != nullptr) {
-            DebugTrace()
+            DebugTrace(playback_locking)
                 //
                 // This is the hot path. We don't want anything too expensive
                 // running in this thread or in this loop. One of the main goals
@@ -136,15 +134,15 @@ void PlaybackManager::playback_thread() {
             // want to enter a stopped state, change the iterator postion, then
             // play again.
             //
-            DebugTrace() std::unique_lock<std::mutex> play_guard(
+            DebugTrace(playback_locking) std::unique_lock<std::mutex> play_guard(
                 worker_thread_lock);
-            DebugTrace() if (state() == PlaybackState::Playing) {
+            DebugTrace(playback_locking) if (state() == PlaybackState::Playing) {
                 set_state(PlaybackState::Stopped);
             }
 
-            DebugTrace() state_condition.notify_all();
-            DebugTrace() thread_condition.wait(play_guard);
-            DebugTrace()
+            DebugTrace(playback_locking) state_condition.notify_all();
+            DebugTrace(playback_locking) thread_condition.wait(play_guard);
+            DebugTrace(playback_locking)
         }
     }
 }
@@ -225,10 +223,10 @@ void PlaybackManager::lock_thread() {
 }
 
 void PlaybackManager::unlock_thread() {
-    DebugTrace() std::lock_guard lk(worker_thread_lock);
+    DebugTrace(playback_locking) std::lock_guard lk(worker_thread_lock);
     std::cout << "Current state - " << state() << std::endl;
     thread_condition.notify_all();
-    DebugTrace()
+    DebugTrace(playback_locking)
     // worker_thread_lock.unlock();
 }
 } // namespace starling
