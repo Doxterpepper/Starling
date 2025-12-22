@@ -1,6 +1,7 @@
 #pragma once
 
 #include <thread>
+#include <mutex>
 
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -44,6 +45,8 @@ class PlayerControls : public QWidget {
 
     void slider_press();
 
+    void wait_playing();
+
   private:
     QGridLayout *layout;
     QPushButton *previous_song_button;
@@ -56,6 +59,7 @@ class PlayerControls : public QWidget {
     int current_time = 0;
 
     std::thread timer;
+    std::condition_variable timer_cv;
     std::mutex timer_lock;
     bool running = true;
 };

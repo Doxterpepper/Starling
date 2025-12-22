@@ -20,6 +20,11 @@ set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
+add_compile_definitions(__DEBUG__)
+
+#if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+#endif()
+
 add_compile_options(-Wall -Werror)
 
 find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
