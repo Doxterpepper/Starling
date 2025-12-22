@@ -15,6 +15,10 @@
 #include "playback_state.h"
 #include "player_cache.h"
 
+#include <common/trace.h>
+
+NEW_TRACE(playback_locking)
+
 namespace starling {
 /*
  * Handle playback state. Playback happens in a different thread owned by the
@@ -63,7 +67,13 @@ class PlaybackManager {
     void unlock_thread();
     void set_state(PlaybackState state);
 
+    void thread_wait();
+
     void playback_thread();
+
+    void wait_turnaround();
+
+    void notify_turnaround();
 
   private:
     PlaybackEngine *engine = nullptr;
@@ -78,6 +88,7 @@ class PlaybackManager {
     // TODO: Is there a better way to handle this besides a mutex?
     //
     std::mutex worker_thread_lock;
+    std::mutex turnaround_mutex;
     bool running = true;
 };
 } // namespace starling

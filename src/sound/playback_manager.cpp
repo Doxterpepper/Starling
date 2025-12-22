@@ -1,10 +1,6 @@
 
 #include "playback_manager.h"
 
-#include <common/trace.h>
-
-NEW_TRACE(playback_locking)
-
 namespace starling {
 PlaybackManager::PlaybackManager(PlaybackEngine *engine, MusicQueue *song_queue) : engine(engine), song_queue(song_queue) {
     lock_thread();
@@ -126,22 +122,28 @@ void PlaybackManager::playback_thread() {
             // want to enter a stopped state, change the iterator postion, then
             // play again.
             //
-            DebugTrace(playback_locking) std::unique_lock<std::mutex> play_guard(worker_thread_lock);
-            DebugTrace(playback_locking) if (state() == PlaybackState::Playing) { set_state(PlaybackState::Stopped); }
-
-            DebugTrace(playback_locking) state_condition.notify_all();
-            DebugTrace(playback_locking) thread_condition.wait(play_guard);
-            DebugTrace(playback_locking)
+            DebugTrace(playback_locking) notify_turnaround();
+            DebugTrace(playback_locking) thread_wait();
         }
     }
 }
 
 void PlaybackManager::stop() {
-    std::unique_lock<std::mutex> lk(worker_thread_lock);
+    if (state() == PlaybackState::Stopped) {
+        return;
+    }
+
+    if (state() == PlaybackState::Paused) {
+        auto current_song = song_queue->current_song();
+        current_song->reset();
+        return;
+    }
+
     set_state(PlaybackState::Stopped);
     engine->stop();
     lock_thread();
-    state_condition.wait(lk);
+    DebugTrace(playback_locking) wait_turnaround();
+    DebugTrace(playback_locking)
 }
 
 void PlaybackManager::previous_song() {
@@ -168,11 +170,16 @@ void PlaybackManager::next_song() {
 }
 
 void PlaybackManager::pause() {
-    std::unique_lock<std::mutex> lk(worker_thread_lock);
+    auto playback_state = state();
+    if (playback_state == PlaybackState::Paused || playback_state == PlaybackState::Stopped) {
+        return;
+    }
+
     set_state(PlaybackState::Paused);
     engine->stop();
-    lock_thread();
-    state_condition.wait(lk);
+    DebugTrace(playback_locking) lock_thread();
+    DebugTrace(playback_locking) wait_turnaround();
+    DebugTrace(playback_locking)
 }
 
 PlaybackState PlaybackManager::state() {
@@ -215,5 +222,22 @@ void PlaybackManager::unlock_thread() {
     thread_condition.notify_all();
     DebugTrace(playback_locking)
     // worker_thread_lock.unlock();
+}
+
+void PlaybackManager::wait_turnaround() {
+    std::unique_lock turnaround_lock(turnaround_mutex);
+    state_condition.wait(turnaround_lock);
+}
+
+void PlaybackManager::notify_turnaround() {
+    std::lock_guard<std::mutex> turnaround_lock(turnaround_mutex);
+    state_condition.notify_all();
+}
+
+void PlaybackManager::thread_wait() {
+    DebugTrace(playback_locking) std::unique_lock<std::mutex> play_guard(worker_thread_lock);
+    DebugTrace(playback_locking) if (state() == PlaybackState::Playing) { set_state(PlaybackState::Stopped); }
+    DebugTrace(playback_locking) thread_condition.wait(play_guard);
+    DebugTrace(playback_locking)
 }
 } // namespace starling

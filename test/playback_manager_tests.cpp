@@ -126,14 +126,11 @@ TEST_CASE("Finishing a song transitions to the next in the queue.") {
     //
     // Too flakey atm.
     //
-    /*
     std::cout << "\n\tSong transition" << std::endl;
     std::mutex condition_mutex;
     std::condition_variable wait_variable;
-    auto play_song_and_notify = [&](SoundFile*)
-    {
+    auto play_song_and_notify = [&](SoundFile *) {
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        std::cout << "notify test" << std::endl;
         wait_variable.notify_all();
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     };
@@ -143,7 +140,6 @@ TEST_CASE("Finishing a song transitions to the next in the queue.") {
     MusicQueue queue;
     PlaybackManager manager(&engine, &queue);
     std::filesystem::path file_path("not areal path");
-
 
     auto mock_sound_file_1 = std::make_unique<MockSoundFile>(file_path);
     auto mock_sound_file_ptr_1 = mock_sound_file_1.get();
@@ -165,32 +161,68 @@ TEST_CASE("Finishing a song transitions to the next in the queue.") {
 
     //
     // The notification comes from the engine itself, now wait for the
-    turnaround to song 2 and verify we're still
+    // turnaround to song 2 and verify we're still
     // in the playing state.
     //
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     CHECK(manager.state() == PlaybackState::Playing);
     CHECK(queue.current_song() == mock_sound_file_ptr_2);
     CHECK(mock_sound_file_ptr_1->reset_called() == 1);
 
     {
         std::unique_lock<std::mutex> thread_lock(condition_mutex);
-
-        std::cout << "waiting on thread" << std::endl;
         wait_variable.wait(thread_lock);
-
-        std::cout << "notified" << std::endl;
     }
 
-    std::cout << "sleeping" << std::endl;
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    std::cout << "Validating final" << std::endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     CHECK(manager.state() == PlaybackState::Stopped);
-    std::cout << "1" << std::endl;
     CHECK(queue.current_song() == nullptr);
-    std::cout << "2" << std::endl;
     CHECK(mock_sound_file_ptr_2->reset_called() == 1);
-    std::cout << "3" << std::endl;
-    */
+}
+
+TEST_CASE("Play song, pause, then back a song should not deadlock") {
+    std::cout << "\n******************************" << std::endl;
+    std::cout << "Play song, pause, back a song." << std::endl;
+    std::cout << "******************************" << std::endl;
+    std::mutex condition_mutex;
+    std::condition_variable wait_variable;
+    auto play_song_and_notify = [&](SoundFile *) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        wait_variable.notify_all();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    };
+
+    MockEngine engine;
+    engine.set_callback(play_song_and_notify);
+    MusicQueue queue;
+    PlaybackManager manager(&engine, &queue);
+    std::filesystem::path file_path("not areal path");
+
+    auto mock_sound_file_1 = std::make_unique<MockSoundFile>(file_path);
+    auto mock_sound_file_ptr_1 = mock_sound_file_1.get();
+
+    auto mock_sound_file_2 = std::make_unique<MockSoundFile>(file_path);
+    auto mock_sound_file_ptr_2 = mock_sound_file_2.get();
+
+    manager.queue(std::move(mock_sound_file_1));
+    manager.queue(std::move(mock_sound_file_2));
+    manager.play(mock_sound_file_ptr_2);
+    CHECK(manager.currently_playing_song() == mock_sound_file_ptr_2);
+
+    {
+        std::unique_lock wait_play(condition_mutex);
+        wait_variable.wait(wait_play);
+    }
+
+    manager.pause();
+    std::this_thread::sleep_for(std::chrono::milliseconds(6));
+    manager.previous_song();
+
+    CHECK(manager.currently_playing_song() == mock_sound_file_ptr_1);
+
+    {
+        std::unique_lock wait_play(condition_mutex);
+        wait_variable.wait(wait_play);
+    }
 }
 } // namespace starling::tests
